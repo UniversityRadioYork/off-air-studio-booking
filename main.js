@@ -5,9 +5,30 @@ const weekNames = {
     "30 Oct – 5 Nov 2023": "Consolidation Week"
 };
 
+const eventClick = (info) => {
+    document.getElementById('eventTitleView').innerText = info.event.title;
+    document.getElementById('eventStartTimeView').textContent = info.event.start;
+    document.getElementById('eventEndTimeView').textContent = info.event.end;
+
+    checkUserPermissionToDelete().then((allowed) => {
+        const deleteButton = document.getElementById('deleteEvent');
+        if (allowed) {
+            deleteButton.style.display = 'block';
+            deleteButton.onclick = () => {
+                fetch(`/delete/${info.event.id}`, { method: "DELETE" }).then(() => {
+                    window.location.reload();
+                })
+            }
+        } else {
+            deleteButton.style.display = 'none';
+        }
+    });
+
+    $('#eventDetailsModal').modal('show');
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    var calendarEl = document.getElementById('calendar');
-    var calendar = new FullCalendar.Calendar(calendarEl, {
+    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         headerToolbar: {
             left: '',
             center: 'title',
@@ -20,29 +41,15 @@ document.addEventListener('DOMContentLoaded', function () {
         locale: "en-GB",
         firstDay: 1,
         allDaySlot: false,
-        eventClick: function (info) {
-            document.getElementById('eventTitleView').innerText = info.event.title;
-            document.getElementById('eventStartTimeView').textContent = info.event.start;
-            document.getElementById('eventEndTimeView').textContent = info.event.end;
-
-            checkUserPermissionToDelete().then((allowed) => {
-                const deleteButton = document.getElementById('deleteEvent');
-                if (allowed) {
-                    deleteButton.style.display = 'block';
-                } else {
-                    deleteButton.style.display = 'none';
-                }
-            });
-
-            $('#eventDetailsModal').modal('show');
-        },
+        eventClick: eventClick,
         events: "/get"
     });
     calendar.render();
 
-    document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText];
+    // Week Names
+    document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
     document.getElementById("fc-dom-1").addEventListener("DOMCharacterDataModified", function () {
-        document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText];
+        document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
     }, false);
 });
 
@@ -74,6 +81,7 @@ populateEventTypes();
 document.getElementById("create-button").onclick = () => {
     const titleGroup = document.getElementById('titleGroup');
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(document.getElementById("eventType").value) ? 'block' : 'none';
+    document.getElementById("create-error").innerText = "";
 }
 
 // Show or hide the event title input based on event type
@@ -101,18 +109,15 @@ document.getElementById('submitEvent').addEventListener('click', async function 
 
         // Handle the API response (e.g., show a success message)
         if (response.data.status === 'OK') {
-            alert('Event created successfully.');
             $('#eventModal').modal('hide');
+            window.location.reload();
         } else {
-            alert('Failed to create the event. Please try again or correct the data.');
+            document.getElementById("create-error").innerText = 'Failed to create the event. Please try again or correct the data. ' + response.data;
         }
     } catch (error) {
-        console.log(error)
-        alert('An error occurred while creating the event.');
+        document.getElementById("create-error").innerText = 'An error occurred while creating the event. ' + error.response.data;
     }
 });
-
-
 
 // Simulated API call to check user's permission to delete
 async function checkUserPermissionToDelete() {
