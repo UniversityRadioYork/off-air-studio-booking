@@ -10,7 +10,7 @@ func myRadioTrainingSync() {
 
 	It'll check every 15 minutes between 9am and 10pm.
 
-	If it finds a training session on MyRadio in the next 2 weeks not on the calendar,
+	If it finds a training session on MyRadio not on the calendar,
 	it'll add it, though if there's a conflict, it'll...I guess email
 	the person.
 
@@ -23,7 +23,7 @@ func myRadioTrainingSync() {
 		}
 
 		// Do the Sync
-		// Ask MyRadio for training sessions in next 14 days
+		// Ask MyRadio for training sessions
 
 		// Iterate Over Training
 

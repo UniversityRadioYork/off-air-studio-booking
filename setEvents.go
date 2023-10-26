@@ -10,25 +10,21 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var ClashError error = fmt.Errorf("clashing events")
+var ErrClash error = fmt.Errorf("clashing events")
 
 func addEvent(event Event) error {
 	// Find clashes
-	rows, err := db.Query("SELECT * FROM events WHERE (start_time >= $1 AND start_time < $2) OR (end_time > $1 AND end_time <= $2) OR (start_time < $1 AND end_time > $2)", event.StartTime, event.EndTime)
+	rows, err := db.Query(
+		"SELECT * FROM events WHERE (start_time >= $1 AND start_time < $2) OR (end_time > $1 AND end_time <= $2) OR (start_time < $1 AND end_time > $2)",
+		event.StartTime, event.EndTime)
 	if err != nil {
 		return err
 	}
 
-	clashes := false
 	defer rows.Close()
 
-	for rows.Next() {
-		clashes = true
-		break
-	}
-
-	if clashes {
-		return ClashError
+	if rows.Next() {
+		return ErrClash
 	}
 
 	if event.Title == "" {
@@ -38,7 +34,8 @@ func addEvent(event Event) error {
 	}
 
 	// Insert the event into the database
-	err = db.QueryRow("INSERT INTO events(event_type, event_title, user_id, start_time, end_time) VALUES($1, $2, $3, $4, $5) RETURNING event_id",
+	err = db.QueryRow(
+		"INSERT INTO events(event_type, event_title, user_id, start_time, end_time) VALUES($1, $2, $3, $4, $5) RETURNING event_id",
 		event.Type, event.Title, 1, event.StartTime, event.EndTime).Scan(&event.ID)
 
 	return err
@@ -49,7 +46,6 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	// Implement your authorization logic here
 
 	// Parse the request body and create a new event
-	// var event Event
 	// Parse event data from the request body
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
@@ -65,7 +61,7 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	err = addEvent(event)
 
 	if err != nil {
-		if errors.Is(err, ClashError) {
+		if errors.Is(err, ErrClash) {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, err)
 			return

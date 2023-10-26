@@ -17,11 +17,13 @@
         <br>
         <h1>Off-Air Studio Booking</h1>
         <br>
+        <p><span id="user-logged-in"></span> (<a href="/logout">logout</a>)</p>
         <button id="create-button" type="button" class="btn btn-primary" data-toggle="modal" data-target="#eventModal">
             Add Booking</button>
 
         <h3 class="text-center" id="week-name"></h3>
 
+        <!-- Create Event -->
         <div class="modal" id="eventModal" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -63,6 +65,7 @@
             </div>
         </div>
 
+        <!-- View and Edit -->
         <div class="modal" id="eventDetailsModal" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -85,6 +88,7 @@
             </div>
         </div>
 
+        <!-- Calendar -->
         <div class="ui grid">
             <div class="ui sixteen column">
                 <div id="calendar"></div>

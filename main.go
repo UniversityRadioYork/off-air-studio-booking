@@ -1,16 +1,28 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/UniversityRadioYork/myradio-go"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
+var myrSession *myradio.Session
+var cookiestore = sessions.NewCookieStore([]byte("key"))
+
+type CtxKey string
+
+const UserCtxKey CtxKey = "user"
+
+const AuthRealm string = "ury-off-air-bookings"
 
 func initDB() {
 	// Replace with your PostgreSQL connection string
@@ -65,18 +77,82 @@ func js(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "main.js")
 }
 
+func auth(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method == "GET" {
+		http.ServeFile(w, r, "login.html")
+		return
+	} else if r.Method == "POST" {
+		session, _ := cookiestore.Get(r, AuthRealm)
+
+		memberid := r.FormValue("memberid")
+		if memberid == "" {
+			http.Redirect(w, r, "/auth", http.StatusFound)
+			return
+		}
+
+		var err error
+		session.Values["memberid"], err = strconv.Atoi(memberid)
+		if err != nil {
+			panic(err)
+		}
+		session.Save(r, w)
+		http.Redirect(w, r, "/", http.StatusFound)
+
+	}
+	fmt.Fprint(w, "hmmm")
+}
+
+func AuthHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/auth" {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		session, _ := cookiestore.Get(r, AuthRealm)
+		if auth, ok := session.Values["memberid"].(int); !ok || auth == 0 {
+			// redirect to auth
+			http.Redirect(w, r, "/auth", http.StatusFound)
+		} else {
+			ctx := context.WithValue(context.Background(), UserCtxKey, auth)
+			h.ServeHTTP(w, r.WithContext(ctx))
+		}
+
+	})
+}
+
 func main() {
 	initDB()
+
+	var err error
+	myrSession, err = myradio.NewSessionFromKeyFile()
+	if err != nil {
+		// TODO
+		panic(err)
+	}
 
 	go myRadioTrainingSync()
 
 	r := mux.NewRouter()
+
 	r.HandleFunc("/", indexPage).Methods("GET")
 	r.HandleFunc("/main.js", js).Methods("GET")
 	r.HandleFunc("/create", createEvent).Methods("POST")
 	r.HandleFunc("/delete/{id}", deleteEvent).Methods("DELETE")
 	r.HandleFunc("/get", getEvents).Methods("GET")
+	r.HandleFunc("/auth", auth)
+	r.HandleFunc("/name", func(w http.ResponseWriter, r *http.Request) {
+		name := GetNameOfUser(11207)
+		w.Write([]byte(name))
+	})
+	r.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := cookiestore.Get(r, AuthRealm)
+		session.Values["memberid"] = 0
+		session.Save(r, w)
+		http.Redirect(w, r, "https://ury.org.uk/myradio/MyRadio/logout", http.StatusFound)
+	})
 
-	http.Handle("/", r)
+	http.Handle("/", AuthHandler(r))
 	http.ListenAndServe(":8080", nil)
 }

@@ -5,6 +5,9 @@ const weekNames = {
     "30 Oct – 5 Nov 2023": "Consolidation Week"
 };
 
+/***
+ * Clicking on an Event
+ */
 const eventClick = (info) => {
     document.getElementById('eventTitleView').innerText = info.event.title;
     document.getElementById('eventStartTimeView').textContent = info.event.start;
@@ -27,6 +30,9 @@ const eventClick = (info) => {
     $('#eventDetailsModal').modal('show');
 }
 
+/**
+ * Loading the Calendar
+ */
 document.addEventListener('DOMContentLoaded', function () {
     let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         headerToolbar: {
@@ -91,7 +97,9 @@ document.getElementById('eventType').addEventListener('change', function () {
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(selectedType) ? 'block' : 'none';
 });
 
-// Handle event submission
+/**
+ * Add an Event
+ */
 document.getElementById('submitEvent').addEventListener('click', async function () {
     const eventType = document.getElementById('eventType').value;
     const eventTitle = document.getElementById('eventTitle').value;
@@ -119,7 +127,9 @@ document.getElementById('submitEvent').addEventListener('click', async function 
     }
 });
 
-// Simulated API call to check user's permission to delete
+/**
+ * Check Delete Permissions
+ */
 async function checkUserPermissionToDelete() {
     // Replace with your API endpoint for checking user's permission
     return true;
@@ -130,3 +140,10 @@ async function checkUserPermissionToDelete() {
         return false; // Handle the error appropriately
     }
 }
+
+/**
+ * User's Name
+ */
+fetch("/name", { credentials: "include" }).then(r => r.text()).then(d => {
+    document.getElementById("user-logged-in").innerText = d;
+})

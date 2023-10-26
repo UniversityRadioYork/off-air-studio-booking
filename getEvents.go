@@ -13,13 +13,15 @@ type renderEvent struct {
 	TextColor string `json:"textColor"`
 }
 
-var typeToColor map[string]string = map[string]string{
-	"Training":    "red",
-	"Recording":   "blue",
-	"Engineering": "green",
-	"Meeting":     "purple",
-	"Other":       "yellow",
+var typeToColor map[BookingType]string = map[BookingType]string{
+	TypeTraining:    "red",
+	TypeRecording:   "blue",
+	TypeEngineering: "green",
+	TypeMeeting:     "purple",
+	TypeOther:       "yellow",
 }
+
+const DBTimeFormat string = "2006-01-02T15:04"
 
 func getEvents(w http.ResponseWriter, r *http.Request) {
 	// Calculate the date range for the past 3 and next 3 months
@@ -43,14 +45,14 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		event.Color = typeToColor[event.Type]
+		event.Color = typeToColor[BookingType(event.Type)]
 		event.TextColor = "white"
-		if event.Type == "Other" {
+		if event.Type == TypeOther {
 			event.TextColor = "black"
 		}
 
-		event.Start = event.StartTime.Format("2006-01-02T15:04")
-		event.End = event.EndTime.Format("2006-01-02T15:04")
+		event.Start = event.StartTime.Format(DBTimeFormat)
+		event.End = event.EndTime.Format(DBTimeFormat)
 
 		events = append(events, event)
 	}
