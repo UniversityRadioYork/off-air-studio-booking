@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -44,9 +45,9 @@ func initDB() {
 
 type Event struct {
 	ID        int `json:"id"`
-	Type      string
+	Type      BookingType
 	Title     string `json:"title"`
-	User      string
+	User      int
 	Start     string `json:"start"`
 	End       string `json:"end"`
 	StartTime time.Time
@@ -140,10 +141,30 @@ func main() {
 	r.HandleFunc("/main.js", js).Methods("GET")
 	r.HandleFunc("/create", createEvent).Methods("POST")
 	r.HandleFunc("/delete/{id}", deleteEvent).Methods("DELETE")
+	r.HandleFunc("/canDelete/{id}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		eventID := vars["id"]
+		id, err := strconv.Atoi(eventID)
+		if err != nil {
+			// TODO
+			panic(err)
+		}
+
+		w.Write([]byte(strconv.FormatBool(hasPermissionToDelete(r.Context().Value(UserCtxKey).(int), id))))
+	}).Methods("GET")
 	r.HandleFunc("/get", getEvents).Methods("GET")
+	r.HandleFunc("/userCreateTypes", func(w http.ResponseWriter, r *http.Request) {
+		json, err := json.Marshal(bookingsUserCanCreate(r.Context().Value(UserCtxKey).(int)))
+		if err != nil {
+			// TODO
+			panic(err)
+		}
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(json)
+	}).Methods("GET")
 	r.HandleFunc("/auth", auth)
 	r.HandleFunc("/name", func(w http.ResponseWriter, r *http.Request) {
-		name := GetNameOfUser(11207)
+		name := GetNameOfUser(r.Context().Value(UserCtxKey).(int))
 		w.Write([]byte(name))
 	})
 	r.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -154,5 +175,7 @@ func main() {
 	})
 
 	http.Handle("/", AuthHandler(r))
-	http.ListenAndServe(":8080", nil)
+	if err = http.ListenAndServe(":8080", nil); err != nil {
+		panic(err)
+	}
 }

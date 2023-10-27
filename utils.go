@@ -1,14 +1,14 @@
 package main
 
-import "strconv"
+import "fmt"
 
 type Team int
 type BookingType string
 
 const (
 	TeamManagement  Team = 1
-	TeamEngineering      = 2
-	TeamComputing        = 3
+	TeamEngineering      = 7
+	TeamComputing        = 8
 
 	TypeMeeting     BookingType = "Meeting"
 	TypeOther                   = "Other"
@@ -27,8 +27,13 @@ func GetNameOfUser(id int) string {
 	return name
 }
 
-func hasPermissionToDelete(userID int, event Event) bool {
-	if strconv.Itoa(userID) == event.User {
+func hasPermissionToDelete(userID int, eventID int) bool {
+	var event Event
+	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
+		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
+
+	fmt.Println(event)
+	if userID == event.User {
 		return true
 	}
 
@@ -43,12 +48,12 @@ func hasPermissionToDelete(userID int, event Event) bool {
 			continue
 		}
 
-		if officership.TeamId == 1 {
+		if officership.Officer.Team.TeamID == 1 {
 			// Management
 			return true
 		}
 
-		if event.Type == TypeEngineering && (officership.TeamId == TeamEngineering || officership.TeamId == TeamComputing) {
+		if event.Type == TypeEngineering && (officership.Officer.Team.TeamID == TeamEngineering || officership.Officer.Team.TeamID == TeamComputing) {
 			// Engineering Type Events
 			return true
 		}
@@ -76,7 +81,9 @@ func bookingsUserCanCreate(userID int) []BookingType {
 			continue
 		}
 
-		if officership.TeamId == TeamEngineering || officership.TeamId == TeamComputing {
+		bookingTypes = append(bookingTypes, TypeMeeting)
+
+		if officership.Officer.Team.TeamID == TeamEngineering || officership.Officer.Team.TeamID == TeamComputing {
 			bookingTypes = append(bookingTypes, TypeEngineering)
 		}
 	}

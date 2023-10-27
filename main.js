@@ -13,22 +13,24 @@ const eventClick = (info) => {
     document.getElementById('eventStartTimeView').textContent = info.event.start;
     document.getElementById('eventEndTimeView').textContent = info.event.end;
 
-    checkUserPermissionToDelete().then((allowed) => {
+    fetch("/canDelete/" + info.event.id, { credentials: "include" }).then(r => r.json()).then(allowedToDelete => {
         const deleteButton = document.getElementById('deleteEvent');
-        if (allowed) {
+        if (allowedToDelete) {
             deleteButton.style.display = 'block';
             deleteButton.onclick = () => {
-                fetch(`/delete/${info.event.id}`, { method: "DELETE" }).then(() => {
-                    window.location.reload();
-                })
+                if (confirm("Confirm deleting this booking")) {
+                    fetch(`/delete/${info.event.id}`, { method: "DELETE" }).then(() => {
+                        window.location.reload();
+                    })
+                }
             }
         } else {
             deleteButton.style.display = 'none';
         }
-    });
 
-    $('#eventDetailsModal').modal('show');
-}
+        $('#eventDetailsModal').modal('show');
+    })
+};
 
 /**
  * Loading the Calendar
@@ -48,7 +50,19 @@ document.addEventListener('DOMContentLoaded', function () {
         firstDay: 1,
         allDaySlot: false,
         eventClick: eventClick,
-        events: "/get"
+        events: "/get",
+        selectable: true,
+        selectMirror: true,
+        selectOverlap: false,
+        select: (info) => {
+            console.log(info.start)
+            console.log(info.start.toISOString().slice(0, 19))
+            const formatDate = d => `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}T${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:00`;
+            console.log(formatDate(info.start))
+            document.getElementById("eventStartTime").value = formatDate(info.start);
+            document.getElementById("eventEndTime").value = formatDate(info.end);
+            document.getElementById("create-button").click();
+        }
     });
     calendar.render();
 
@@ -58,31 +72,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
     }, false);
 });
-
-// Fetch event types from an API endpoint
-function fetchEventTypes() {
-    // Simulate fetching event types
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(['Training', 'Recording', 'Engineering', 'Meeting', 'Other']);
-        }, 1000);
-    });
-}
-
-// Populate the event type dropdown
-async function populateEventTypes() {
-    const eventTypes = await fetchEventTypes();
-    const eventTypeDropdown = document.getElementById('eventType');
-
-    eventTypes.forEach((type) => {
-        const option = document.createElement('option');
-        option.value = type;
-        option.text = type;
-        eventTypeDropdown.appendChild(option);
-    });
-}
-
-populateEventTypes();
 
 document.getElementById("create-button").onclick = () => {
     const titleGroup = document.getElementById('titleGroup');
@@ -128,22 +117,23 @@ document.getElementById('submitEvent').addEventListener('click', async function 
 });
 
 /**
- * Check Delete Permissions
- */
-async function checkUserPermissionToDelete() {
-    // Replace with your API endpoint for checking user's permission
-    return true;
-    try {
-        const response = await axios.get('/api/checkUserPermissionToDelete');
-        return response.data.allowed;
-    } catch (error) {
-        return false; // Handle the error appropriately
-    }
-}
-
-/**
  * User's Name
  */
 fetch("/name", { credentials: "include" }).then(r => r.text()).then(d => {
     document.getElementById("user-logged-in").innerText = d;
+})
+
+/**
+ * User Event Types
+ */
+const eventTypeDropdown = document.getElementById('eventType');
+
+fetch("/userCreateTypes", { credentials: "include" }).then(r => r.json()).then(d => {
+    d = [...new Set(d)];
+    d.forEach((e) => {
+        const option = document.createElement('option');
+        option.value = e;
+        option.text = e;
+        eventTypeDropdown.appendChild(option);
+    })
 })
