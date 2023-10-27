@@ -13,14 +13,33 @@
 </head>
 
 <body>
-    <div class="ui container">
-        <br>
-        <h1>Off-Air Studio Booking</h1>
-        <br>
-        <p><span id="user-logged-in"></span> (<a href="/logout">logout</a>)</p>
-        <button id="create-button" type="button" class="btn btn-primary" data-toggle="modal" data-target="#eventModal">
-            Add Booking</button>
 
+    <!-- Navbar content -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="#">Off-Air Studio Booking</a>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <button id="create-button" type="button" class="btn btn-danger" data-toggle="modal"
+                        data-target="#eventModal">
+                        Add Booking</button>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="user-logged-in" role="button"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></a>
+                    <div class="dropdown-menu" aria-labelledby="user-logged-in">
+                        <a class="dropdown-item" href="/logout">Logout</a>
+                    </div>
+                </li>
+
+            </ul>
+        </div>
+    </nav>
+
+    <div class="ui container">
+
+        <br>
         <h3 class="text-center" id="week-name"></h3>
 
         <!-- Create Event -->
