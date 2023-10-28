@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -78,49 +77,28 @@ func js(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "main.js")
 }
 
-func auth(w http.ResponseWriter, r *http.Request) {
+func info(w http.ResponseWriter, r *http.Request) {
+	createTypes := bookingsUserCanCreate(r.Context().Value(UserCtxKey).(int))
+	name := GetNameOfUser(r.Context().Value(UserCtxKey).(int))
+	commit := getBuildCommit()
 
-	if r.Method == "GET" {
-		http.ServeFile(w, r, "login.html")
-		return
-	} else if r.Method == "POST" {
-		session, _ := cookiestore.Get(r, AuthRealm)
-
-		memberid := r.FormValue("memberid")
-		if memberid == "" {
-			http.Redirect(w, r, "/auth", http.StatusFound)
-			return
-		}
-
-		var err error
-		session.Values["memberid"], err = strconv.Atoi(memberid)
-		if err != nil {
-			panic(err)
-		}
-		session.Save(r, w)
-		http.Redirect(w, r, "/", http.StatusFound)
-
-	}
-	fmt.Fprint(w, "hmmm")
-}
-
-func AuthHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/auth" {
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		session, _ := cookiestore.Get(r, AuthRealm)
-		if auth, ok := session.Values["memberid"].(int); !ok || auth == 0 {
-			// redirect to auth
-			http.Redirect(w, r, "/auth", http.StatusFound)
-		} else {
-			ctx := context.WithValue(context.Background(), UserCtxKey, auth)
-			h.ServeHTTP(w, r.WithContext(ctx))
-		}
-
+	json, err := json.Marshal(struct {
+		CreateTypes []BookingType
+		Name        string
+		CommitHash  string
+	}{
+		CreateTypes: createTypes,
+		Name:        name,
+		CommitHash:  commit,
 	})
+
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(json)
 }
 
 func main() {
@@ -153,26 +131,9 @@ func main() {
 		w.Write([]byte(strconv.FormatBool(hasPermissionToDelete(r.Context().Value(UserCtxKey).(int), id))))
 	}).Methods("GET")
 	r.HandleFunc("/get", getEvents).Methods("GET")
-	r.HandleFunc("/userCreateTypes", func(w http.ResponseWriter, r *http.Request) {
-		json, err := json.Marshal(bookingsUserCanCreate(r.Context().Value(UserCtxKey).(int)))
-		if err != nil {
-			// TODO
-			panic(err)
-		}
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(json)
-	}).Methods("GET")
 	r.HandleFunc("/auth", auth)
-	r.HandleFunc("/name", func(w http.ResponseWriter, r *http.Request) {
-		name := GetNameOfUser(r.Context().Value(UserCtxKey).(int))
-		w.Write([]byte(name))
-	})
-	r.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		session, _ := cookiestore.Get(r, AuthRealm)
-		session.Values["memberid"] = 0
-		session.Save(r, w)
-		http.Redirect(w, r, "https://ury.org.uk/myradio/MyRadio/logout", http.StatusFound)
-	})
+	r.HandleFunc("/info", info).Methods("GET")
+	r.HandleFunc("/logout", logout)
 
 	http.Handle("/", AuthHandler(r))
 	if err = http.ListenAndServe(":8080", nil); err != nil {

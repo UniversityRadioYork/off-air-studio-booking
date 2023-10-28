@@ -117,20 +117,16 @@ document.getElementById('submitEvent').addEventListener('click', async function 
 });
 
 /**
- * User's Name
- */
-fetch("/name", { credentials: "include" }).then(r => r.text()).then(d => {
-    document.getElementById("user-logged-in").innerText = d;
-})
-
-/**
- * User Event Types
+ * Page Info
  */
 const eventTypeDropdown = document.getElementById('eventType');
 
-fetch("/userCreateTypes", { credentials: "include" }).then(r => r.json()).then(d => {
-    d = [...new Set(d)];
-    d.forEach((e) => {
+fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
+    document.getElementById("user-logged-in").innerText = d.Name;
+    document.getElementById("commit-hash").innerText = d.CommitHash;
+
+    createTypes = [...new Set(d.CreateTypes)];
+    createTypes.forEach((e) => {
         const option = document.createElement('option');
         option.value = e;
         option.text = e;

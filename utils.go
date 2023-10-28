@@ -1,6 +1,9 @@
 package main
 
-import "sort"
+import (
+	"runtime/debug"
+	"sort"
+)
 
 type Team int
 type Officer int
@@ -130,4 +133,15 @@ func bookingsUserCanCreate(userID int) []BookingType {
 
 	return bookingTypes
 
+}
+
+func getBuildCommit() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value[:7]
+			}
+		}
+	}
+	return ""
 }
