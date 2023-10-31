@@ -8,4 +8,4 @@ PORT=3090
 docker build -t $IMAGE .
 docker push $IMAGE
 docker stop $CONTAINER || echo 0
-docker run -d --env-file $ENV --name $CONTAINER -p $PORT:8080 --rm $IMAGE
+docker run -d --env-file $ENV --name $CONTAINER -p $PORT:8080 $IMAGE
