@@ -27,8 +27,8 @@ const AuthRealm string = "ury-off-air-bookings"
 
 func initDB() {
 	// Replace with your PostgreSQL connection string
-	connectionString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable",
-		os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBNAME"), os.Getenv("DBHOST"))
+	connectionString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
+		os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBNAME"), os.Getenv("DBHOST"), os.Getenv("DBPORT"))
 	var err error
 	db, err = sql.Open("postgres", connectionString)
 	if err != nil {
