@@ -79,6 +79,10 @@ func js(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "main.js")
 }
 
+func favicon(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "favicon.ico")
+}
+
 func info(w http.ResponseWriter, r *http.Request) {
 	createTypes := bookingsUserCanCreate(r.Context().Value(UserCtxKey).(int))
 	name := GetNameOfUser(r.Context().Value(UserCtxKey).(int))
@@ -136,6 +140,7 @@ func main() {
 	r.HandleFunc("/auth", auth)
 	r.HandleFunc("/info", info).Methods("GET")
 	r.HandleFunc("/logout", logout)
+	r.HandleFunc("/favicon.ico", favicon).Methods("GET")
 
 	http.Handle("/", AuthHandler(r))
 	if err = http.ListenAndServe(":8080", nil); err != nil {
