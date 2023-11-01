@@ -38,7 +38,7 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var events []renderEvent
+	var events []renderEvent = []renderEvent{}
 	for rows.Next() {
 		var event renderEvent
 		if err := rows.Scan(&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime); err != nil {
