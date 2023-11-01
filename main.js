@@ -1,8 +1,15 @@
+// temporary until part of the api
 const weekNames = {
     "9 – 15 Oct 2023": "Week 3",
     "16 – 22 Oct 2023": "Week 4",
     "23 – 29 Oct 2023": "Week 5",
-    "30 Oct – 5 Nov 2023": "Consolidation Week"
+    "30 Oct – 5 Nov 2023": "Consolidation Week",
+    "6 – 12 Nov 2023": "Week 6",
+    "13 – 19 Nov 2023": "Week 7",
+    "20 – 26 Nov 2023": "Week 8",
+    "27 Nov – 3 Dec 2023": "Week 9",
+    "4 – 10 Dec 2023": "Week 10",
+    "11 – 17 Dec 2023": "Week 11"
 };
 
 /***
