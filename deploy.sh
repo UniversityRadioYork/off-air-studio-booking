@@ -2,7 +2,7 @@
 
 IMAGE="evergiven.ury.york.ac.uk:5000/off-air-studio-booking"
 CONTAINER="off-air-studio-booking"
-aPROJECTDIR="/opt/off-air-studio-booking"
+PROJECTDIR="/opt/off-air-studio-booking"
 PORT=3090
 
 docker build -t $IMAGE .
