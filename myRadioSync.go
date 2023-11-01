@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 func myRadioTrainingSync() {
 	/**
@@ -24,12 +27,48 @@ func myRadioTrainingSync() {
 
 		// Do the Sync
 		// Ask MyRadio for training sessions
+		trainings, err := myrSession.GetFutureTrainingSessions()
+		if err != nil {
+			// TODO
+			panic(err)
+		}
 
 		// Iterate Over Training
+		for _, trainingSession := range trainings {
+			// Is training in the calendar? Yes good.
+			// No - is it free? Yes - add the session.
+			// No - email the person.
 
-		// Is training in the calendar? Yes good.
-		// No - is it free? Yes - add the session.
-		// No - email the person.
+			var count int
+			err = db.QueryRow("SELECT COUNT(*) FROM events WHERE start_time = $1 AND event_type = 'Training' AND user_id = $2",
+				trainingSession.StartTime(), trainingSession.HostMemberID).Scan(&count)
+			if err != nil {
+				// TODO
+				panic(err)
+			}
+			if count != 0 {
+				continue
+			}
+
+			err = addEvent(Event{
+				Type:      TypeTraining,
+				User:      trainingSession.HostMemberID,
+				StartTime: trainingSession.StartTime(),
+				EndTime:   trainingSession.StartTime().Add(time.Hour),
+			})
+
+			if err == nil {
+				continue
+			}
+
+			if !errors.Is(err, ErrClash) {
+				// TODO
+				panic(err)
+			}
+
+			// TODO Inform the User
+
+		}
 
 		time.Sleep(15 * time.Minute)
 	}
