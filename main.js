@@ -73,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     calendar.render();
 
+    if (window.innerWidth < 1000) {
+        calendar.changeView("listWeek");
+    }
+
     // Week Names
     document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
     document.getElementById("fc-dom-1").addEventListener("DOMCharacterDataModified", function () {
