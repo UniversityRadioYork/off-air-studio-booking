@@ -17,8 +17,9 @@ const (
 
 	OfficerTrainingCoordinator Officer = 107
 
-	TrainingStudioTrained TrainingStatus = 1
-	TrainingTrainer                      = 3
+	TrainingStudioTrained  TrainingStatus = 1
+	TrainingPodcastTrained                = 28
+	TrainingTrainer                       = 3
 
 	TypeMeeting     BookingType = "Meeting"
 	TypeOther                   = "Other"
@@ -116,7 +117,7 @@ func bookingsUserCanCreate(userID int) []BookingType {
 	}
 
 	for _, training := range trainings {
-		if training.StatusID == int(TrainingStudioTrained) {
+		if training.StatusID == int(TrainingStudioTrained) || training.StatusID == TrainingPodcastTrained {
 			bookingTypes = append(bookingTypes, TypeRecording)
 			continue
 		}
