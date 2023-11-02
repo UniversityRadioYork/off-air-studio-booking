@@ -45,14 +45,15 @@ func initDB() {
 }
 
 type Event struct {
-	ID        int `json:"id"`
-	Type      BookingType
-	Title     string `json:"title"`
-	User      int
-	Start     string `json:"start"`
-	End       string `json:"end"`
-	StartTime time.Time
-	EndTime   time.Time
+	ID             int `json:"id"`
+	Type           BookingType
+	Title          string `json:"title"`
+	User           int
+	Start          string `json:"start"`
+	End            string `json:"end"`
+	StartTime      time.Time
+	EndTime        time.Time
+	NoNameAttached bool `json:"noNameAttached"`
 }
 
 func (e *Event) parseTimes() {
@@ -135,6 +136,9 @@ func main() {
 		}
 
 		w.Write([]byte(strconv.FormatBool(hasPermissionToDelete(r.Context().Value(UserCtxKey).(int), id))))
+	}).Methods("GET")
+	r.HandleFunc("/canCreateUnnamedEvents", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(strconv.FormatBool(isManagement(r.Context().Value(UserCtxKey).(int)))))
 	}).Methods("GET")
 	r.HandleFunc("/get", getEvents).Methods("GET")
 	r.HandleFunc("/auth", auth)

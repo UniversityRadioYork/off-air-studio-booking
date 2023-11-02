@@ -41,10 +41,12 @@ func addEvent(event Event) error {
 		return ErrClash
 	}
 
-	if event.Title == "" {
-		event.Title = fmt.Sprintf("%s - %s", event.Type, GetNameOfUser(event.User))
-	} else {
-		event.Title = fmt.Sprintf("%s - %s", event.Title, GetNameOfUser(event.User))
+	if !event.NoNameAttached {
+		if event.Title == "" {
+			event.Title = fmt.Sprintf("%s - %s", event.Type, GetNameOfUser(event.User))
+		} else {
+			event.Title = fmt.Sprintf("%s - %s", event.Title, GetNameOfUser(event.User))
+		}
 	}
 
 	// Insert the event into the database

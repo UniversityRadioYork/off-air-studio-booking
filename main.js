@@ -12,6 +12,10 @@ const weekNames = {
     "11 – 17 Dec 2023": "Week 11"
 };
 
+const userCanCreateUnnamedEvents = async () => {
+    return await fetch("/canCreateUnnamedEvents", { credentials: "include" }).then(r => r.json());
+}
+
 /***
  * Clicking on an Event
  */
@@ -84,17 +88,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }, false);
 });
 
-document.getElementById("create-button").onclick = () => {
+document.getElementById("create-button").onclick = async () => {
     const titleGroup = document.getElementById('titleGroup');
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(document.getElementById("eventType").value) ? 'block' : 'none';
+    const nameSelectButton = document.getElementById("name-selector");
+    nameSelectButton.style.display = document.getElementById("eventType").value == "Other" && await userCanCreateUnnamedEvents() ? "block" : "none";
     document.getElementById("create-error").innerText = "";
 }
 
 // Show or hide the event title input based on event type
-document.getElementById('eventType').addEventListener('change', function () {
+document.getElementById('eventType').addEventListener('change', async function () {
     const selectedType = this.value;
     const titleGroup = document.getElementById('titleGroup');
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(selectedType) ? 'block' : 'none';
+    const nameSelectButton = document.getElementById("name-selector");
+    nameSelectButton.style.display = selectedType == "Other" && await userCanCreateUnnamedEvents() ? "block" : "none";
 });
 
 /**
@@ -105,6 +113,7 @@ document.getElementById('submitEvent').addEventListener('click', async function 
     const eventTitle = document.getElementById('eventTitle').value;
     const eventStartTime = document.getElementById('eventStartTime').value;
     const eventEndTime = document.getElementById('eventEndTime').value;
+    const eventUnnamed = document.getElementById("name-selector-check").checked;
 
     // Make an API request to submit the event
     try {
@@ -113,6 +122,7 @@ document.getElementById('submitEvent').addEventListener('click', async function 
             title: eventTitle,
             start: eventStartTime,
             end: eventEndTime,
+            noNameAttached: eventUnnamed,
         });
 
         // Handle the API response (e.g., show a success message)

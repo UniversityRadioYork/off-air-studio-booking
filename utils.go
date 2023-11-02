@@ -45,15 +45,7 @@ func GetNameOfUser(id int) string {
 	return name
 }
 
-func hasPermissionToDelete(userID int, eventID int) bool {
-	var event Event
-	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
-		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
-
-	if userID == event.User {
-		return true
-	}
-
+func isManagement(userID int) bool {
 	officerships, err := myrSession.GetUserOfficerships(userID)
 	if err != nil {
 		// TODO
@@ -68,6 +60,34 @@ func hasPermissionToDelete(userID int, eventID int) bool {
 		if officership.Officer.Team.TeamID == uint(TeamManagement) {
 			// Management
 			return true
+		}
+	}
+
+	return false
+}
+
+func hasPermissionToDelete(userID int, eventID int) bool {
+	var event Event
+	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
+		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
+
+	if userID == event.User {
+		return true
+	}
+
+	if isManagement(userID) {
+		return true
+	}
+
+	officerships, err := myrSession.GetUserOfficerships(userID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	for _, officership := range officerships {
+		if officership.TillDateRaw != "" {
+			continue
 		}
 
 		if event.Type == TypeEngineering && (officership.Officer.Team.TeamID == TeamEngineering || officership.Officer.Team.TeamID == TeamComputing) {
