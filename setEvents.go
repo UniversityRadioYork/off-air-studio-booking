@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -81,17 +82,25 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 
 	event.parseTimes()
 
-	err = addEvent(event)
+	firstStartTime := event.StartTime
+	firstEndTime := event.EndTime
 
-	if err != nil {
-		if errors.Is(err, ErrClash) {
-			w.WriteHeader(http.StatusBadRequest)
+	for i := 0; i < event.Repeat; i++ {
+		event.StartTime = firstStartTime.Add(time.Duration(i*24*7) * time.Hour)
+		event.EndTime = firstEndTime.Add(time.Duration(i*24*7) * time.Hour)
+
+		err = addEvent(event)
+
+		if err != nil {
+			if errors.Is(err, ErrClash) {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprint(w, err)
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err)
-		return
 	}
 
 	w.Header().Add("Content-Type", "application/json")

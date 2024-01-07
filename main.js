@@ -93,6 +93,8 @@ document.getElementById("create-button").onclick = async () => {
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(document.getElementById("eventType").value) ? 'block' : 'none';
     const nameSelectButton = document.getElementById("name-selector");
     nameSelectButton.style.display = document.getElementById("eventType").value == "Other" && await userCanCreateUnnamedEvents() ? "block" : "none";
+    const repeatSelector = document.getElementById("repeat");
+    repeatSelector.style.display = document.getElementById("eventType").value == "Meeting" ? "block" : "none";
     document.getElementById("create-error").innerText = "";
 }
 
@@ -103,6 +105,9 @@ document.getElementById('eventType').addEventListener('change', async function (
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(selectedType) ? 'block' : 'none';
     const nameSelectButton = document.getElementById("name-selector");
     nameSelectButton.style.display = selectedType == "Other" && await userCanCreateUnnamedEvents() ? "block" : "none";
+    const repeatSelector = document.getElementById("repeat");
+    repeatSelector.style.display = selectedType == "Meeting" ? "block" : "none";
+    document.getElementById("repeatEvent").value = 1;
 });
 
 /**
@@ -114,6 +119,7 @@ document.getElementById('submitEvent').addEventListener('click', async function 
     const eventStartTime = document.getElementById('eventStartTime').value;
     const eventEndTime = document.getElementById('eventEndTime').value;
     const eventUnnamed = document.getElementById("name-selector-check").checked;
+    const repeatNum = Number(document.getElementById("repeatEvent").value);
 
     // Make an API request to submit the event
     try {
@@ -123,6 +129,7 @@ document.getElementById('submitEvent').addEventListener('click', async function 
             start: eventStartTime,
             end: eventEndTime,
             noNameAttached: eventUnnamed,
+            repeat: repeatNum
         });
 
         // Handle the API response (e.g., show a success message)

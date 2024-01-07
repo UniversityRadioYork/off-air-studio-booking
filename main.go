@@ -54,6 +54,7 @@ type Event struct {
 	StartTime      time.Time
 	EndTime        time.Time
 	NoNameAttached bool `json:"noNameAttached"`
+	Repeat         int  `json:"repeat"`
 }
 
 func (e *Event) parseTimes() {
