@@ -9,7 +9,18 @@ const weekNames = {
     "20 – 26 Nov 2023": "Week 8",
     "27 Nov – 3 Dec 2023": "Week 9",
     "4 – 10 Dec 2023": "Week 10",
-    "11 – 17 Dec 2023": "Week 11"
+    "11 – 17 Dec 2023": "Week 11",
+    "8 – 14 Jan 2024": "Revision Week",
+    "15 – 21 Jan 2024": "R+A Week 1",
+    "22 – 28 Jan 2024": "R+A Week 2",
+    "29 Jan – 4 Feb 2024": "R+A Week 3",
+    "5 – 11 Feb 2024": "Refreshers Week",
+    "12 – 18 Feb 2024": "Week 1",
+    "19 – 25 Feb 2024": "Week 2",
+    "26 Feb – 3 Mar 2024": "Week 3",
+    "4 – 10 Mar 2024": "Week 4",
+    "11 – 17 Mar 2024": "Week 5",
+    "18 – 24 Mar 2024": "Week 6"
 };
 
 const userCanCreateUnnamedEvents = async () => {
