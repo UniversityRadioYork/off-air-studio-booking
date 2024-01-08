@@ -23,7 +23,15 @@ var typeToColor map[BookingType]string = map[BookingType]string{
 
 const DBTimeFormat string = "2006-01-02T15:04"
 
+var encodedEventsCache string = ""
+
 func getEvents(w http.ResponseWriter, r *http.Request) {
+	if encodedEventsCache != "" {
+		w.Header().Add("content-type", "application/json")
+		w.Write([]byte(encodedEventsCache))
+		return
+	}
+
 	// Calculate the date range for the past 3 and next 3 months
 	now := time.Now()
 	threeMonthsAgo := now.AddDate(0, -3, 0)
@@ -64,6 +72,9 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 		// TODO
 	}
+
+	encodedEventsCache = string(json)
+
 	w.Header().Add("content-type", "application/json")
 	w.Write(json)
 }

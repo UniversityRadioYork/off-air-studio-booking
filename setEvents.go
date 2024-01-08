@@ -55,6 +55,8 @@ func addEvent(event Event) error {
 		"INSERT INTO events(event_type, event_title, user_id, start_time, end_time) VALUES($1, $2, $3, $4, $5) RETURNING event_id",
 		string(event.Type), event.Title, event.User, event.StartTime, event.EndTime).Scan(&event.ID)
 
+	encodedEventsCache = ""
+
 	return err
 }
 
@@ -126,6 +128,8 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = db.Exec("DELETE FROM events WHERE event_id=$1", id)
+
+	encodedEventsCache = ""
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
