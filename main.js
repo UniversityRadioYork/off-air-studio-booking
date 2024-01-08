@@ -172,3 +172,5 @@ fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
         eventTypeDropdown.appendChild(option);
     })
 })
+
+$('#welcomemodal').modal('show');
