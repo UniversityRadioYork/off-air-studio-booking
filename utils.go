@@ -3,6 +3,9 @@ package main
 import (
 	"runtime/debug"
 	"sort"
+	"time"
+
+	"github.com/UniversityRadioYork/myradio-go"
 )
 
 type Team int
@@ -36,18 +39,90 @@ var typeOrdering map[BookingType]int = map[BookingType]int{
 	TypeOther:       5,
 }
 
+type myRadioNameCacheObject struct {
+	name      string
+	cacheTime time.Time
+}
+
+const cacheInvalidationTime = time.Duration(-2*24) * time.Hour
+
+var myRadioNameCache map[int]myRadioNameCacheObject = make(map[int]myRadioNameCacheObject)
+
 func GetNameOfUser(id int) string {
+	if cacheObject, ok := myRadioNameCache[id]; ok {
+		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
+			return cacheObject.name
+		}
+	}
+
 	name, err := myrSession.GetUserName(id)
 	if err != nil {
 		// TODO
 		panic(err)
 	}
 
+	myRadioNameCache[id] = myRadioNameCacheObject{
+		name:      name,
+		cacheTime: time.Now(),
+	}
+
 	return name
 }
 
-func isManagement(userID int) bool {
+type myRadioOfficershipCacheObject struct {
+	officerships []myradio.Officership
+	cacheTime    time.Time
+}
+
+var myRadioOfficershipsCache map[int]myRadioOfficershipCacheObject = make(map[int]myRadioOfficershipCacheObject)
+
+func myRadioGetOfficerships(userID int) ([]myradio.Officership, error) {
+	if cacheObject, ok := myRadioOfficershipsCache[userID]; ok {
+		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
+			return cacheObject.officerships, nil
+		}
+	}
+
 	officerships, err := myrSession.GetUserOfficerships(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	myRadioOfficershipsCache[userID] = myRadioOfficershipCacheObject{
+		officerships: officerships,
+		cacheTime:    time.Now(),
+	}
+	return officerships, nil
+}
+
+type myRadioTrainingsCacheObject struct {
+	trainings []myradio.Training
+	cacheTime time.Time
+}
+
+var myRadioTrainingsCache map[int]myRadioTrainingsCacheObject = make(map[int]myRadioTrainingsCacheObject)
+
+func myRadioGetTrainings(userID int) ([]myradio.Training, error) {
+	if cacheObject, ok := myRadioTrainingsCache[userID]; ok {
+		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
+			return cacheObject.trainings, nil
+		}
+	}
+
+	trainings, err := myrSession.GetUserTraining(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	myRadioTrainingsCache[userID] = myRadioTrainingsCacheObject{
+		trainings: trainings,
+		cacheTime: time.Now(),
+	}
+	return trainings, nil
+}
+
+func isManagement(userID int) bool {
+	officerships, err := myRadioGetOfficerships(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -80,7 +155,7 @@ func hasPermissionToDelete(userID int, eventID int) bool {
 		return true
 	}
 
-	officerships, err := myrSession.GetUserOfficerships(userID)
+	officerships, err := myRadioGetOfficerships(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -110,7 +185,7 @@ func bookingsUserCanCreate(userID int) []BookingType {
 
 	// If Studio Trained -> Recording
 	// If Trainer -> Training
-	trainings, err := myrSession.GetUserTraining(userID)
+	trainings, err := myRadioGetTrainings(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -130,7 +205,7 @@ func bookingsUserCanCreate(userID int) []BookingType {
 
 	// If Committee -> Meeting
 	// If Tech -> Engineering
-	officerships, err := myrSession.GetUserOfficerships(userID)
+	officerships, err := myRadioGetOfficerships(userID)
 	if err != nil {
 		// TODO
 		panic(err)
