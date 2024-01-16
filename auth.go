@@ -4,33 +4,58 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
+	"time"
+
+	"github.com/golang-jwt/jwt"
 )
 
 func auth(w http.ResponseWriter, r *http.Request) {
 
-	if r.Method == "GET" {
-		http.ServeFile(w, r, "login.html")
+	jwtString := r.URL.Query().Get("jwt")
+
+	if jwtString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "No JWT")
 		return
-	} else if r.Method == "POST" {
-		session, _ := cookiestore.Get(r, AuthRealm)
-
-		memberid := r.FormValue("memberid")
-		if memberid == "" {
-			http.Redirect(w, r, "/auth", http.StatusFound)
-			return
-		}
-
-		var err error
-		session.Values["memberid"], err = strconv.Atoi(memberid)
-		if err != nil {
-			panic(err)
-		}
-		session.Save(r, w)
-		http.Redirect(w, r, "/", http.StatusFound)
-
 	}
-	fmt.Fprint(w, "hmmm")
+
+	// parse the token
+	token, err := jwt.Parse(jwtString, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+
+		return []byte("rM\\.7*SU)5-7"), nil
+	})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err)
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err)
+		return
+	}
+
+	session, _ := cookiestore.Get(r, AuthRealm)
+
+	memberid := claims["uid"].(float64)
+	name := claims["name"].(string)
+
+	myRadioNameCache[int(memberid)] = myRadioNameCacheObject{
+		name:      name,
+		cacheTime: time.Now(),
+	}
+
+	session.Values["memberid"] = int(memberid)
+	session.Save(r, w)
+	http.Redirect(w, r, "/", http.StatusFound)
+
 }
 
 func AuthHandler(h http.Handler) http.Handler {
@@ -43,7 +68,7 @@ func AuthHandler(h http.Handler) http.Handler {
 		session, _ := cookiestore.Get(r, AuthRealm)
 		if auth, ok := session.Values["memberid"].(int); !ok || auth == 0 {
 			// redirect to auth
-			http.Redirect(w, r, "/auth", http.StatusFound)
+			http.Redirect(w, r, "https://ury.org.uk/myradio/MyRadio/jwt?redirectto=http://localhost:8080/auth", http.StatusFound)
 		} else {
 			ctx := context.WithValue(context.Background(), UserCtxKey, auth)
 			h.ServeHTTP(w, r.WithContext(ctx))
