@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"runtime/debug"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/UniversityRadioYork/myradio-go"
@@ -178,6 +180,23 @@ func hasPermissionToDelete(userID int, eventID int) bool {
 	}
 
 	return false
+}
+
+func canClaimEventForStation(userID int, eventID int) bool {
+	if !isManagement(userID) {
+		return false
+	}
+
+	var event Event
+	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
+		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
+
+	if event.Type != TypeOther {
+		return false
+	}
+
+	return strings.HasSuffix(event.Title, fmt.Sprintf("- %s", GetNameOfUser(event.User)))
+
 }
 
 func bookingsUserCanCreate(userID int) []BookingType {

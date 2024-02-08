@@ -1,3 +1,7 @@
+/**
+URY Off Air Studio Booking App
+*/
+
 package main
 
 import (
@@ -91,13 +95,15 @@ func info(w http.ResponseWriter, r *http.Request) {
 	commit := getBuildCommit()
 
 	json, err := json.Marshal(struct {
-		CreateTypes []BookingType
-		Name        string
-		CommitHash  string
+		CreateTypes                []BookingType
+		Name                       string
+		CommitHash                 string
+		UserCanCreateUnnamedEvents bool
 	}{
-		CreateTypes: createTypes,
-		Name:        name,
-		CommitHash:  commit,
+		CreateTypes:                createTypes,
+		Name:                       name,
+		CommitHash:                 commit,
+		UserCanCreateUnnamedEvents: isManagement(r.Context().Value(UserCtxKey).(int)),
 	})
 
 	if err != nil {
@@ -127,7 +133,8 @@ func main() {
 	r.HandleFunc("/main.js", js).Methods("GET")
 	r.HandleFunc("/create", createEvent).Methods("POST")
 	r.HandleFunc("/delete/{id}", deleteEvent).Methods("DELETE")
-	r.HandleFunc("/canDelete/{id}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/claim/{id}", claimEventForStation).Methods("PUT")
+	r.HandleFunc("/canModify/{id}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		eventID := vars["id"]
 		id, err := strconv.Atoi(eventID)
@@ -136,10 +143,23 @@ func main() {
 			panic(err)
 		}
 
-		w.Write([]byte(strconv.FormatBool(hasPermissionToDelete(r.Context().Value(UserCtxKey).(int), id))))
-	}).Methods("GET")
-	r.HandleFunc("/canCreateUnnamedEvents", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(strconv.FormatBool(isManagement(r.Context().Value(UserCtxKey).(int)))))
+		userID := r.Context().Value(UserCtxKey).(int)
+
+		json, err := json.Marshal(struct {
+			Delete          bool
+			ClaimForStation bool
+		}{
+			Delete:          hasPermissionToDelete(userID, id),
+			ClaimForStation: canClaimEventForStation(userID, id),
+		})
+
+		if err != nil {
+			// TODO
+			panic(err)
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(json)
 	}).Methods("GET")
 	r.HandleFunc("/get", getEvents).Methods("GET")
 	r.HandleFunc("/auth", auth)

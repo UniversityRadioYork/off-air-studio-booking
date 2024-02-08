@@ -23,9 +23,7 @@ const weekNames = {
     "18 – 24 Mar 2024": "Week 6"
 };
 
-const userCanCreateUnnamedEvents = async () => {
-    return await fetch("/canCreateUnnamedEvents", { credentials: "include" }).then(r => r.json());
-}
+let userCanCreateUnnamedEvents = false;
 
 /***
  * Clicking on an Event
@@ -35,7 +33,8 @@ const eventClick = (info) => {
     document.getElementById('eventStartTimeView').textContent = info.event.start;
     document.getElementById('eventEndTimeView').textContent = info.event.end;
 
-    fetch("/canDelete/" + info.event.id, { credentials: "include" }).then(r => r.json()).then(allowedToDelete => {
+    fetch("/canModify/" + info.event.id, { credentials: "include" }).then(r => r.json()).then(d => {
+        let allowedToDelete = d.Delete;
         const deleteButton = document.getElementById('deleteEvent');
         if (allowedToDelete) {
             deleteButton.style.display = 'block';
@@ -48,6 +47,19 @@ const eventClick = (info) => {
             }
         } else {
             deleteButton.style.display = 'none';
+        }
+
+        let canClaimForStation = d.ClaimForStation;
+        const claimButton = document.getElementById("claimEvent");
+        if (canClaimForStation) {
+            claimButton.style.display = 'block';
+            claimButton.onclick = () => {
+                fetch(`/claim/${info.event.id}`, { method: "PUT" }).then(() => {
+                    window.location.reload();
+                })
+            }
+        } else {
+            claimButton.style.display = 'none';
         }
 
         $('#eventDetailsModal').modal('show');
@@ -103,7 +115,7 @@ document.getElementById("create-button").onclick = async () => {
     const titleGroup = document.getElementById('titleGroup');
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(document.getElementById("eventType").value) ? 'block' : 'none';
     const nameSelectButton = document.getElementById("name-selector");
-    nameSelectButton.style.display = document.getElementById("eventType").value == "Other" && await userCanCreateUnnamedEvents() ? "block" : "none";
+    nameSelectButton.style.display = document.getElementById("eventType").value == "Other" && userCanCreateUnnamedEvents ? "block" : "none";
     const repeatSelector = document.getElementById("repeat");
     repeatSelector.style.display = document.getElementById("eventType").value == "Meeting" ? "block" : "none";
     document.getElementById("create-error").innerText = "";
@@ -115,7 +127,7 @@ document.getElementById('eventType').addEventListener('change', async function (
     const titleGroup = document.getElementById('titleGroup');
     titleGroup.style.display = ['Engineering', 'Meeting', 'Other'].includes(selectedType) ? 'block' : 'none';
     const nameSelectButton = document.getElementById("name-selector");
-    nameSelectButton.style.display = selectedType == "Other" && await userCanCreateUnnamedEvents() ? "block" : "none";
+    nameSelectButton.style.display = selectedType == "Other" && userCanCreateUnnamedEvents ? "block" : "none";
     const repeatSelector = document.getElementById("repeat");
     repeatSelector.style.display = selectedType == "Meeting" ? "block" : "none";
     document.getElementById("repeatEvent").value = 1;
@@ -163,6 +175,7 @@ const eventTypeDropdown = document.getElementById('eventType');
 fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
     document.getElementById("user-logged-in").innerText = d.Name;
     document.getElementById("commit-hash").innerText = d.CommitHash;
+    userCanCreateUnnamedEvents = d.UserCanCreateUnnamedEvents;
 
     createTypes = [...new Set(d.CreateTypes)];
     createTypes.forEach((e) => {

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -128,6 +129,40 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = db.Exec("DELETE FROM events WHERE event_id=$1", id)
+
+	encodedEventsCache = ""
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func claimEventForStation(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	eventID := vars["id"]
+	id, err := strconv.Atoi(eventID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	if !canClaimEventForStation(r.Context().Value(UserCtxKey).(int), id) {
+		panic("TODO")
+	}
+
+	var event Event
+	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
+		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
+
+	newTitle, _, _ := strings.Cut(event.Title, fmt.Sprintf("- %s", GetNameOfUser(event.User)))
+
+	_, err = db.Exec("UPDATE events SET event_title = $1 WHERE event_id = $2", newTitle, id)
+	if err != nil {
+		panic(err)
+	}
 
 	encodedEventsCache = ""
 
