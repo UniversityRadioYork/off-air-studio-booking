@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -57,6 +58,8 @@ func addEvent(event Event) error {
 		string(event.Type), event.Title, event.User, event.StartTime, event.EndTime).Scan(&event.ID)
 
 	encodedEventsCache = ""
+
+	log.Printf("%s created %s at %s (ID %v)\n", GetNameOfUser(event.User), event.Title, event.Start, event.ID)
 
 	return err
 }
@@ -136,6 +139,8 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("%s deleted event %v", GetNameOfUser(r.Context().Value(UserCtxKey).(int)), id)
 
 	w.WriteHeader(http.StatusNoContent)
 }
