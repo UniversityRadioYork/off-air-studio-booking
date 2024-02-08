@@ -78,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         navLinks: false,
         nowIndicator: true,
-        editable: true,
         initialView: 'timeGridWeek',
         locale: "en-GB",
         firstDay: 1,
