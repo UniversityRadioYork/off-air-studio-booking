@@ -17,14 +17,25 @@
 <body>
 
     <!-- Navbar content -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <a class="navbar-brand" href="#">Off-Air Studio Booking</a>
         <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <button id="create-button" type="button" class="btn btn-danger" data-toggle="modal"
-                        data-target="#eventModal">
+                    <button id="create-button" type="button" class="btn btn-success" data-toggle="modal"
+                        data-target="#eventModal" style="margin-right: 3em;">
                         Add Booking</button>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="key-menu" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Key</a>
+                    <div class="dropdown-menu" aria-labelledby="key-menu">
+                        <p class="dropdown-item" style="background-color: red; color: white;">Training</p>
+                        <p class="dropdown-item" style="background-color: blue; color: white;">Recording</p>
+                        <p class="dropdown-item" style="background-color: green; color: white;">Engineering</p>
+                        <p class="dropdown-item" style="background-color: purple; color: white;">Meeting</p>
+                        <p class="dropdown-item" style="background-color: yellow;">Other</p>
+                    </div>
                 </li>
 
                 <li class="nav-item dropdown">
