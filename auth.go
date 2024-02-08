@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -25,7 +26,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 
-		return []byte("rM\\.7*SU)5-7"), nil
+		return []byte(os.Getenv("MYRADIO_SIGNING_KEY")), nil
 	})
 
 	if err != nil {
@@ -68,7 +69,7 @@ func AuthHandler(h http.Handler) http.Handler {
 		session, _ := cookiestore.Get(r, AuthRealm)
 		if auth, ok := session.Values["memberid"].(int); !ok || auth == 0 {
 			// redirect to auth
-			http.Redirect(w, r, "https://ury.org.uk/myradio/MyRadio/jwt?redirectto=http://localhost:8080/auth", http.StatusFound)
+			http.Redirect(w, r, fmt.Sprintf("https://ury.org.uk/myradio/MyRadio/jwt?redirectto=%s/auth", os.Getenv("HOST")), http.StatusFound)
 		} else {
 			ctx := context.WithValue(context.Background(), UserCtxKey, auth)
 			h.ServeHTTP(w, r.WithContext(ctx))
