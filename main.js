@@ -72,8 +72,8 @@ const eventClick = (info) => {
 document.addEventListener('DOMContentLoaded', function () {
     let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         headerToolbar: {
-            left: '',
-            center: 'title',
+            left: 'title',
+            center: '',
             right: 'prev,next today',
         },
         navLinks: false,
