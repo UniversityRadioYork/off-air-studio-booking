@@ -25,6 +25,38 @@ const weekNames = {
 
 let userCanCreateUnnamedEvents = false;
 
+// Okay look - It's either this or we render a secret second calendar that is always in week format.
+function getWeekName(dateString) {
+    const date = new Date(dateString.toISOString());
+
+    // Find the start of the week (Monday)
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1));
+
+    // Find the end of the week (Sunday)
+    const endOfWeek = new Date(date);
+    endOfWeek.setDate(date.getDate() - date.getDay() + 7 - (date.getDay() === 0 ? 7 : 0));
+
+    // Format the start and end dates
+    const startNum = startOfWeek.getDate();
+    const endNum = endOfWeek.getDate();
+
+    // Format start end month
+    let startMonth = startOfWeek.toLocaleString('default', { month: 'short' });
+    const endMonth = endOfWeek.toLocaleString('default', { month: 'short' });
+    startMonth = startMonth == endMonth ? "" : startMonth;
+
+    // Format start end year
+    let startYear = startOfWeek.getFullYear();
+    const endYear = endOfWeek.getFullYear();
+    startYear = startYear == endYear ? "" : startYear;
+
+    // Build Range
+    const weekRangeText = `${startNum} ${startMonth} ${startYear} – ${endNum} ${endMonth} ${endYear}`.replace(/\s+/g, ' ').trim();
+
+    return weekNames[weekRangeText] || "-";
+}
+
 /***
  * Clicking on an Event
  */
@@ -101,23 +133,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     calendar.render();
 
-    if (window.innerWidth < 750) {
+    if (window.innerWidth < 900) {
         calendar.changeView("timeGridDay");
     }
     // update view on window resize
     window.addEventListener('resize', () => {
-        if (window.innerWidth < 750) {
+        if (window.innerWidth < 900) {
             calendar.changeView("timeGridDay");
         } else {
             calendar.changeView("timeGridWeek");
         }
     });
 
-    // Week Names
-    document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
-    document.getElementById("fc-dom-1").addEventListener("DOMCharacterDataModified", function () {
-        document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
-    }, false);
+    updateWeekName = () => {
+        const weekName = getWeekName(calendar.getDate());
+        document.getElementById("week-name").innerText = weekName;
+    }
+    updateWeekName();
+    document.getElementById("fc-dom-1").addEventListener("DOMCharacterDataModified", updateWeekName, false);
 });
 
 document.getElementById("create-button").onclick = async () => {
