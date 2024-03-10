@@ -99,8 +99,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     calendar.render();
 
-    if (window.innerWidth < 1000) {
-        calendar.changeView("listWeek");
+    if (window.innerWidth < 750) {
+        calendar.changeView("timeGridDay");
     }
 
     // Week Names
