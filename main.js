@@ -69,13 +69,15 @@ const eventClick = (info) => {
 /**
  * Loading the Calendar
  */
+let calendar;
 document.addEventListener('DOMContentLoaded', function () {
-    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+    calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         headerToolbar: {
             left: 'title',
             center: '',
             right: 'prev,next today',
         },
+        contentHeight: "auto",
         navLinks: false,
         nowIndicator: true,
         initialView: 'timeGridWeek',
@@ -102,6 +104,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.innerWidth < 750) {
         calendar.changeView("timeGridDay");
     }
+    // update view on window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth < 750) {
+            calendar.changeView("timeGridDay");
+        } else {
+            calendar.changeView("timeGridWeek");
+        }
+    });
 
     // Week Names
     document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
