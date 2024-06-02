@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime/debug"
 	"sort"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/UniversityRadioYork/myradio-go"
@@ -273,7 +273,7 @@ func updateWeekNamesCache() {
 
 	for _, term := range terms {
 		for weekNo, weekName := range term.WeekNames {
-			weekMonday := term.StartTime().Add(time.Duration(weekNo * 7 * 24 * 60) * time.Minute)
+			weekMonday := term.StartTime().Add(time.Duration(weekNo*7*24*60) * time.Minute)
 			weekSunday := weekMonday.Add(6 * 24 * 60 * time.Minute)
 
 			weekString := strconv.Itoa(weekMonday.Day())

@@ -99,13 +99,13 @@ func info(w http.ResponseWriter, r *http.Request) {
 		Name                       string
 		CommitHash                 string
 		UserCanCreateUnnamedEvents bool
-		WeekNames		map[string]string
+		WeekNames                  map[string]string
 	}{
 		CreateTypes:                createTypes,
 		Name:                       name,
 		CommitHash:                 commit,
 		UserCanCreateUnnamedEvents: isManagement(r.Context().Value(UserCtxKey).(int)),
-		WeekNames:			getWeekNames(),
+		WeekNames:                  getWeekNames(),
 	})
 
 	if err != nil {
