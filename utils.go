@@ -5,6 +5,7 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+	"strconv"
 	"time"
 
 	"github.com/UniversityRadioYork/myradio-go"
@@ -259,4 +260,51 @@ func getBuildCommit() string {
 		}
 	}
 	return ""
+}
+
+var weekNamesCache map[string]string = make(map[string]string)
+var weekNameCacheSetTime time.Time = time.Now()
+
+func updateWeekNamesCache() {
+	terms, err := myrSession.GetAllTerms()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, term := range terms {
+		for weekNo, weekName := range term.WeekNames {
+			weekMonday := term.StartTime().Add(time.Duration(weekNo * 7 * 24 * 60) * time.Minute)
+			weekSunday := weekMonday.Add(6 * 24 * 60 * time.Minute)
+
+			weekString := strconv.Itoa(weekMonday.Day())
+			if weekMonday.Month() != weekSunday.Month() {
+				weekString = weekString + " " + weekMonday.Month().String()[:3]
+				if weekMonday.Month() == time.September {
+					weekString = weekString + "t"
+				}
+			}
+
+			weekString = weekString + " – " + strconv.Itoa(weekSunday.Day()) + " " + weekSunday.Month().String()[:3]
+			if weekSunday.Month() == time.September {
+				weekString = weekString + "t"
+			}
+			weekString = weekString + " " + strconv.Itoa(weekMonday.Year())
+
+			weekNamesCache[weekString] = weekName
+		}
+	}
+
+	weekNameCacheSetTime = time.Now()
+}
+
+func getWeekNames() map[string]string {
+	if len(weekNamesCache) == 0 {
+		updateWeekNamesCache()
+	}
+
+	if weekNameCacheSetTime.Before(time.Now().Add(cacheInvalidationTime)) {
+		go updateWeekNamesCache()
+	}
+
+	return weekNamesCache
 }

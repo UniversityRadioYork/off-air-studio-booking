@@ -1,5 +1,7 @@
 github.com/UniversityRadioYork/myradio-go v0.0.0-20231101162857-cf6bb78851a4 h1:36CMjIE6fYB3O4az1o8IIhFwrhJ4ZBpZpKpuun01YM8=
 github.com/UniversityRadioYork/myradio-go v0.0.0-20231101162857-cf6bb78851a4/go.mod h1:iFH6u3KFaQ73MR9bfqTThGd7TFUYUe9cAajxxh9E0Z8=
+github.com/UniversityRadioYork/myradio-go v0.0.0-20240529141651-325814be9b9f h1:6bXz8Ex42jwjV7+7oIHW4Nqs9LWpSinAhXbro/OVUus=
+github.com/UniversityRadioYork/myradio-go v0.0.0-20240529141651-325814be9b9f/go.mod h1:iFH6u3KFaQ73MR9bfqTThGd7TFUYUe9cAajxxh9E0Z8=
 github.com/golang-jwt/jwt v3.2.2+incompatible h1:IfV12K8xAKAnZqdXVzCZ+TOjboZ2keLg81eXfW3O+oY=
 github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=
 github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
