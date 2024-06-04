@@ -169,4 +169,3 @@ fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
 updateWeekNameText();
 })
 
-//$('#welcomemodal').modal('show');
