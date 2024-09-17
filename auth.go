@@ -49,7 +49,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	name := claims["name"].(string)
 
 	myRadioNameCache[int(memberid)] = myRadioNameCacheObject{
-		name:      name,
+		Name:      name,
 		cacheTime: time.Now(),
 	}
 
