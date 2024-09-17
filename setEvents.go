@@ -52,8 +52,11 @@ func addEvent(event Event) error {
 		}
 	}
 
+	creatingUser := GetNameOfUser(event.User)
+
 	if event.Type == TypeTrainingAutoAddedFromMyRadio {
 		event.Type = TypeTraining
+		creatingUser = "MyRadio Auto-Sync"
 		event.Title = fmt.Sprintf("%s %s", event.Title, "📻") // add a radio emoji for things that are added because they're on myradio
 	}
 
@@ -64,7 +67,7 @@ func addEvent(event Event) error {
 
 	encodedEventsCache = ""
 
-	log.Printf("%s created %s at %s (ID %v)\n", GetNameOfUser(event.User), event.Title, event.Start, event.ID)
+	log.Printf("%s created %s at %v (ID %v)\n", creatingUser, event.Title, event.Start, event.ID)
 
 	return err
 }
