@@ -21,23 +21,6 @@
         <a class="navbar-brand" href="#">Off-Air Studio Booking</a>
         <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
             <ul class="navbar-nav">
-                <li class="nav-item">
-                    <button id="create-button" type="button" class="btn btn-success" data-toggle="modal"
-                        data-target="#eventModal" style="margin-right: 3em;">
-                        Add Booking</button>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="key-menu" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Key</a>
-                    <div class="dropdown-menu" aria-labelledby="key-menu">
-                        <p class="dropdown-item" style="background-color: red; color: white;">Training</p>
-                        <p class="dropdown-item" style="background-color: blue; color: white;">Recording</p>
-                        <p class="dropdown-item" style="background-color: green; color: white;">Engineering</p>
-                        <p class="dropdown-item" style="background-color: purple; color: white;">Meeting</p>
-                        <p class="dropdown-item" style="background-color: yellow;">Other</p>
-                    </div>
-                </li>
-
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="user-logged-in" role="button"
                         data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></a>
@@ -47,7 +30,6 @@
                         <p class="dropdown-item" id="commit-hash"></a>
                     </div>
                 </li>
-
             </ul>
         </div>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,29 +37,15 @@
           </button>
     </nav>
 
-    <div class="modal" tabindex="-1" role="dialog" id="welcomemodal">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Welcome</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              <p>Welcome to the new Off-Air Studio Booking calendar. If you have any issues with this, please say in #computing channel on Slack.</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <br>
 
     <div class="ui container-lg">
-
-        <br>
-        <h3 class="text-center" id="week-name"></h3>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0px;">
+		<h3 style="flex-grow: 1; text-align: center;" class="text-center" id="week-name"></h3>
+                <button id="create-button" type="button" class="btn btn-success" data-toggle="modal"
+                        data-target="#eventModal" style="flex-grow: 0;">
+                        Add Booking</button>
+	</div>
 
         <!-- Create Event -->
         <div class="modal" id="eventModal" tabindex="-1" role="dialog">
@@ -160,8 +128,24 @@
             <div class="ui sixteen column">
                 <div id="calendar"></div>
             </div>
-
         </div>
+
+	<br>
+
+	<div class="card border-primary mb-3">
+  		<div class="card-header text-primary">Key</div>
+  		<div class="card-body">
+			<h4>
+				<span class="badge badge-secondary" style="background-color: red;">Training</span>
+				<span class="badge badge-secondary" style="background-color: blue;">Recording</span>
+				<span class="badge badge-secondary" style="background-color: green;">Engineering</span>
+				<span class="badge badge-secondary" style="background-color: purple;">Meeting</span>
+				<span class="badge badge-secondary" style="background-color: yellow; color: black;">Other</span>
+			</h4>
+		</div>
+  	</div>
+</div>
+
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -176,6 +160,8 @@
 
 
     <script src="main.js"></script>
+
+    <br>
 </body>
 
 </html>

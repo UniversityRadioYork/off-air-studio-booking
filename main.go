@@ -99,11 +99,13 @@ func info(w http.ResponseWriter, r *http.Request) {
 		Name                       string
 		CommitHash                 string
 		UserCanCreateUnnamedEvents bool
+		WeekNames                  map[string]string
 	}{
 		CreateTypes:                createTypes,
 		Name:                       name,
 		CommitHash:                 commit,
 		UserCanCreateUnnamedEvents: isManagement(r.Context().Value(UserCtxKey).(int)),
+		WeekNames:                  getWeekNames(),
 	})
 
 	if err != nil {
@@ -119,7 +121,7 @@ func main() {
 	initDB()
 
 	var err error
-	myrSession, err = myradio.NewSessionFromKeyFile()
+	myrSession, err = myradio.NewSessionFromKeyFileForServer(os.Getenv("MYRADIO_API_SERVER"))
 	if err != nil {
 		// TODO
 		panic(err)
