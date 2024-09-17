@@ -309,3 +309,25 @@ func getWeekNames() map[string]string {
 
 	return weekNamesCache
 }
+
+func hasComputingPermission(userID int) bool {
+	officerships, err := myRadioGetOfficerships(userID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	for _, officership := range officerships {
+		if officership.TillDateRaw != "" {
+			continue
+		}
+
+		if officership.Officer.Team.TeamID == TeamComputing {
+			return true
+		}
+
+	}
+
+	return false
+
+}
