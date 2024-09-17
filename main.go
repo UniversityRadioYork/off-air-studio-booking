@@ -168,6 +168,29 @@ func main() {
 	r.HandleFunc("/info", info).Methods("GET")
 	r.HandleFunc("/logout", logout)
 	r.HandleFunc("/favicon.ico", favicon).Methods("GET")
+	r.HandleFunc("/flush", func(w http.ResponseWriter, r *http.Request) {
+		encodedEventsCache = ""
+		myRadioNameCache = make(map[int]myRadioNameCacheObject)
+		myRadioOfficershipsCache = make(map[int]myRadioOfficershipCacheObject)
+		myRadioTrainingsCache = make(map[int]myRadioTrainingsCacheObject)
+		weekNamesCache = make(map[string]string)
+	}).Methods("GET")
+	r.HandleFunc("/cacheview", func(w http.ResponseWriter, r *http.Request) {
+		d, err := json.Marshal([]interface{}{
+			encodedEventsCache,
+			myRadioNameCache,
+			myRadioOfficershipsCache,
+			myRadioTrainingsCache,
+			weekNamesCache,
+		})
+		if err != nil {
+			// TODO
+			panic(err)
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(d)
+	}).Methods("GET")
 
 	http.Handle("/", AuthHandler(r))
 	if err = http.ListenAndServe(":8080", nil); err != nil {
