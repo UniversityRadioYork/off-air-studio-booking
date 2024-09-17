@@ -190,6 +190,12 @@ func main() {
 		}
 
 		var events interface{}
+
+		toDecode := encodedEventsCache
+		if toDecode == "" {
+			toDecode = "{}"
+		}
+
 		err := json.Unmarshal([]byte(encodedEventsCache), events)
 		if err != nil {
 			// TODO
