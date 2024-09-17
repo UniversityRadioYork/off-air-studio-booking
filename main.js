@@ -46,9 +46,12 @@ const updateWeekNameText = () => {
 
     // Week Names
     document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
-    document.getElementById("fc-dom-1").addEventListener("DOMCharacterDataModified", function () {
+
+    const observer = new MutationObserver(() => {
         document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
-    }, false);
+    });
+
+    observer.observe(document.getElementById("fc-dom-1"), {characterData: true, subtree: true});
 }
 
 /**
