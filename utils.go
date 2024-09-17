@@ -44,7 +44,7 @@ var typeOrdering map[BookingType]int = map[BookingType]int{
 }
 
 type myRadioNameCacheObject struct {
-	name      string
+	Name      string
 	cacheTime time.Time
 }
 
@@ -55,7 +55,7 @@ var myRadioNameCache map[int]myRadioNameCacheObject = make(map[int]myRadioNameCa
 func GetNameOfUser(id int) string {
 	if cacheObject, ok := myRadioNameCache[id]; ok {
 		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
-			return cacheObject.name
+			return cacheObject.Name
 		}
 	}
 
@@ -66,7 +66,7 @@ func GetNameOfUser(id int) string {
 	}
 
 	myRadioNameCache[id] = myRadioNameCacheObject{
-		name:      name,
+		Name:      name,
 		cacheTime: time.Now(),
 	}
 
@@ -74,7 +74,7 @@ func GetNameOfUser(id int) string {
 }
 
 type myRadioOfficershipCacheObject struct {
-	officerships []myradio.Officership
+	Officerships []myradio.Officership
 	cacheTime    time.Time
 }
 
@@ -83,7 +83,7 @@ var myRadioOfficershipsCache map[int]myRadioOfficershipCacheObject = make(map[in
 func myRadioGetOfficerships(userID int) ([]myradio.Officership, error) {
 	if cacheObject, ok := myRadioOfficershipsCache[userID]; ok {
 		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
-			return cacheObject.officerships, nil
+			return cacheObject.Officerships, nil
 		}
 	}
 
@@ -93,14 +93,14 @@ func myRadioGetOfficerships(userID int) ([]myradio.Officership, error) {
 	}
 
 	myRadioOfficershipsCache[userID] = myRadioOfficershipCacheObject{
-		officerships: officerships,
+		Officerships: officerships,
 		cacheTime:    time.Now(),
 	}
 	return officerships, nil
 }
 
 type myRadioTrainingsCacheObject struct {
-	trainings []myradio.Training
+	Trainings []myradio.Training
 	cacheTime time.Time
 }
 
@@ -109,7 +109,7 @@ var myRadioTrainingsCache map[int]myRadioTrainingsCacheObject = make(map[int]myR
 func myRadioGetTrainings(userID int) ([]myradio.Training, error) {
 	if cacheObject, ok := myRadioTrainingsCache[userID]; ok {
 		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
-			return cacheObject.trainings, nil
+			return cacheObject.Trainings, nil
 		}
 	}
 
@@ -119,7 +119,7 @@ func myRadioGetTrainings(userID int) ([]myradio.Training, error) {
 	}
 
 	myRadioTrainingsCache[userID] = myRadioTrainingsCacheObject{
-		trainings: trainings,
+		Trainings: trainings,
 		cacheTime: time.Now(),
 	}
 	return trainings, nil

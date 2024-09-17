@@ -189,8 +189,15 @@ func main() {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 		}
 
+		var events interface{}
+		err := json.Unmarshal([]byte(encodedEventsCache), events)
+		if err != nil {
+			// TODO
+			panic(err)
+		}
+
 		d, err := json.Marshal([]interface{}{
-			encodedEventsCache,
+			events,
 			myRadioNameCache,
 			myRadioOfficershipsCache,
 			myRadioTrainingsCache,
