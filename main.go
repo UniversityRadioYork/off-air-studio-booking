@@ -196,7 +196,7 @@ func main() {
 			toDecode = "{}"
 		}
 
-		err := json.Unmarshal([]byte(encodedEventsCache), events)
+		err := json.Unmarshal([]byte(toDecode), &events)
 		if err != nil {
 			// TODO
 			panic(err)
