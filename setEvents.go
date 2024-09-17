@@ -52,6 +52,11 @@ func addEvent(event Event) error {
 		}
 	}
 
+	if event.Type == TypeTrainingAutoAddedFromMyRadio {
+		event.Type = TypeTraining
+		event.Title = fmt.Sprintf("%s %s", event.Title, "📻") // add a radio emoji for things that are added because they're on myradio
+	}
+
 	// Insert the event into the database
 	err = db.QueryRow(
 		"INSERT INTO events(event_type, event_title, user_id, start_time, end_time) VALUES($1, $2, $3, $4, $5) RETURNING event_id",
@@ -87,6 +92,12 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event.parseTimes()
+
+	if event.Type == TypeTrainingAutoAddedFromMyRadio {
+		// this type is only for the automatic adding, not for users
+		http.Error(w, "wrong training type", http.StatusBadRequest)
+		return
+	}
 
 	firstStartTime := event.StartTime
 	firstEndTime := event.EndTime

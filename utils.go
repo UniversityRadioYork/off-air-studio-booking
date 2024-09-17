@@ -27,11 +27,12 @@ const (
 	TrainingPodcastTrained                = 28
 	TrainingTrainer                       = 3
 
-	TypeMeeting     BookingType = "Meeting"
-	TypeOther                   = "Other"
-	TypeEngineering             = "Engineering"
-	TypeTraining                = "Training"
-	TypeRecording               = "Recording"
+	TypeMeeting                      BookingType = "Meeting"
+	TypeOther                                    = "Other"
+	TypeEngineering                              = "Engineering"
+	TypeTraining                                 = "Training"
+	TypeRecording                                = "Recording"
+	TypeTrainingAutoAddedFromMyRadio             = "ONLY_FOR_USE_IN_MYRADIO_TRAINING_SYNC"
 )
 
 var typeOrdering map[BookingType]int = map[BookingType]int{

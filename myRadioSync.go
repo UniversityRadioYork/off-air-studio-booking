@@ -51,7 +51,7 @@ func myRadioTrainingSync() {
 			}
 
 			err = addEvent(Event{
-				Type:      TypeTraining,
+				Type:      TypeTrainingAutoAddedFromMyRadio,
 				User:      trainingSession.HostMemberID,
 				StartTime: trainingSession.StartTime(),
 				EndTime:   trainingSession.StartTime().Add(time.Hour),
