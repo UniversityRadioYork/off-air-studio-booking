@@ -21,8 +21,9 @@ func myRadioTrainingSync() {
 	It'll check every 15 minutes between 9am and 10pm.
 
 	If it finds a training session on MyRadio not on the calendar,
-	it'll add it, though if there's a conflict, it'll...I guess email
-	the person.
+	it'll add it, though if there's a conflict, it'll create a warning,
+	that will be shown to the user on the calendar, and also the TC and
+	management.
 
 	**/
 
@@ -43,8 +44,8 @@ func myRadioTrainingSync() {
 		// Iterate Over Training
 		for _, trainingSession := range trainings {
 			// Is training in the calendar? Yes good.
-			// No - is it free? Yes - add the session.
-			// No - email the person.
+			// No - is it free? Yes - add the session, remove the warning if there is one.
+			// No - create the warning if there isn't already one.
 
 			var count int
 			err = db.QueryRow("SELECT COUNT(*) FROM events WHERE start_time = $1 AND event_type = 'Training' AND user_id = $2",
