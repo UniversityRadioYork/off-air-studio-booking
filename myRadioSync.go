@@ -49,12 +49,13 @@ func myRadioTrainingSync() {
 			if count != 0 {
 				continue
 			}
-
-			err = addEvent(Event{
-				Type:      TypeTrainingAutoAddedFromMyRadio,
-				User:      trainingSession.HostMemberID,
-				StartTime: trainingSession.StartTime(),
-				EndTime:   trainingSession.StartTime().Add(time.Hour),
+			err = addEvent(EventCreator{
+				Event: Event{
+					Type:      TypeTrainingAutoAddedFromMyRadio,
+					User:      trainingSession.HostMemberID,
+					StartTime: trainingSession.StartTime(),
+					EndTime:   trainingSession.StartTime().Add(time.Hour),
+				},
 			})
 
 			if err == nil {

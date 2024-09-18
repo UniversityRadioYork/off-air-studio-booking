@@ -7,13 +7,19 @@ import (
 	"time"
 )
 
+// renderEvent takes the Event and adds details we only need for the calendar
+// NOTE: the calendar expects Color spelling in the JSON
 type renderEvent struct {
 	Event
-	Color     string `json:"color"`
-	TextColor string `json:"textColor"`
+	Colour     string `json:"color"`
+	TextColour string `json:"textColor"`
 }
 
-var typeToColor map[BookingType]string = map[BookingType]string{
+// typeToColour maps event types to their colours. The calendar expects the
+// colours to be in the API data, so we insert them here. These colours
+// came from the colours in the original studio booking spreadsheet.
+// NOTE: it is expected to match the key in the HTML
+var typeToColour map[BookingType]string = map[BookingType]string{
 	TypeTraining:    "red",
 	TypeRecording:   "blue",
 	TypeEngineering: "green",
@@ -21,11 +27,15 @@ var typeToColor map[BookingType]string = map[BookingType]string{
 	TypeOther:       "yellow",
 }
 
-const DBTimeFormat string = "2006-01-02T15:04"
-
+// encodedEventsCache saves us bugging the DB each time the page is loaded
+// by saving the JSON response as a string
+// IMPORTANT: whenever DB data is changed, this must be cleared
 var encodedEventsCache string = ""
 
-func getEvents(w http.ResponseWriter, r *http.Request) {
+// getEventsHandler is the main handler for returning JSON containing the bookings information
+// It looks +/- 3 months from present (when it calls the DB, not if it just calls
+// encodedEventsCache)
+func getEventsHandler(w http.ResponseWriter, r *http.Request) {
 	if encodedEventsCache != "" {
 		w.Header().Add("content-type", "application/json")
 		w.Write([]byte(encodedEventsCache))
@@ -46,6 +56,7 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	// We will need to turn each Event into a renderEvent by including the colours
 	var events []renderEvent = []renderEvent{}
 	for rows.Next() {
 		var event renderEvent
@@ -53,20 +64,20 @@ func getEvents(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		event.Color = typeToColor[BookingType(event.Type)]
-		event.TextColor = "white"
+		event.Colour = typeToColour[BookingType(event.Type)]
+
+		// TypeOther uses a yellow background, so we need contrasting text
+		event.TextColour = "white"
 		if event.Type == TypeOther {
-			event.TextColor = "black"
+			event.TextColour = "black"
 		}
 
-		event.Start = event.StartTime.Format(DBTimeFormat)
-		event.End = event.EndTime.Format(DBTimeFormat)
+		event.parseTimes()
 
 		events = append(events, event)
 	}
 
 	// Marshal the events to JSON and respond
-	// Implement JSON marshaling and response
 	json, err := json.Marshal(events)
 	if err != nil {
 		panic(err)

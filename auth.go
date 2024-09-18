@@ -10,6 +10,8 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+// auth is the handler for being redirected back from MyRadio along with
+// a MyRadio signed JWT to decode and extract user information
 func auth(w http.ResponseWriter, r *http.Request) {
 
 	jwtString := r.URL.Query().Get("jwt")
@@ -43,14 +45,17 @@ func auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// we'll then start a session for the user. this lets all the API calls
+	// and such also be authenticated
 	session, _ := cookiestore.Get(r, AuthRealm)
 
 	memberid := claims["uid"].(float64)
 	name := claims["name"].(string)
 
+	// given MyRadio gives us the UID and the name, we may as well cache it
 	myRadioNameCache[int(memberid)] = myRadioNameCacheObject{
 		Name:      name,
-		cacheTime: time.Now(),
+		CacheTime: time.Now(),
 	}
 
 	session.Values["memberid"] = int(memberid)
@@ -59,6 +64,8 @@ func auth(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// AuthHandler is for all requests, and accesses either the existing session
+// or redirects to MyRadio to login
 func AuthHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/auth" {
@@ -78,6 +85,7 @@ func AuthHandler(h http.Handler) http.Handler {
 	})
 }
 
+// logout resets the session and redirects to the MyRadio logout
 func logout(w http.ResponseWriter, r *http.Request) {
 	session, _ := cookiestore.Get(r, AuthRealm)
 	session.Values["memberid"] = 0

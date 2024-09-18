@@ -51,7 +51,7 @@ const updateWeekNameText = () => {
         document.getElementById("week-name").innerText = weekNames[document.getElementById("fc-dom-1").innerText] || "";
     });
 
-    observer.observe(document.getElementById("fc-dom-1"), {characterData: true, subtree: true});
+    observer.observe(document.getElementById("fc-dom-1"), { characterData: true, subtree: true });
 }
 
 /**
@@ -90,8 +90,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.innerWidth < 1000) {
         calendar.changeView("listWeek");
     }
-	
-	updateWeekNameText()
+
+    updateWeekNameText()
 });
 
 document.getElementById("create-button").onclick = async () => {
@@ -168,7 +168,7 @@ fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
         eventTypeDropdown.appendChild(option);
     })
 
-	weekNames = d.WeekNames;
-updateWeekNameText();
+    weekNames = d.WeekNames;
+    updateWeekNameText();
 })
 

@@ -21,16 +21,18 @@ import (
 
 var db *sql.DB
 var myrSession *myradio.Session
-var cookiestore = sessions.NewCookieStore([]byte("key"))
+
+const AuthRealm string = "ury-off-air-bookings"
+
+var cookiestore = sessions.NewCookieStore([]byte(AuthRealm))
 
 type CtxKey string
 
 const UserCtxKey CtxKey = "user"
 
-const AuthRealm string = "ury-off-air-bookings"
-
+// initDB will create our connection to the database
+// this uses the environment variables as described in the README
 func initDB() {
-	// Replace with your PostgreSQL connection string
 	connectionString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 		os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBNAME"), os.Getenv("DBHOST"), os.Getenv("DBPORT"))
 	var err error
@@ -48,28 +50,42 @@ func initDB() {
 	fmt.Println("Connected to the database")
 }
 
+// Event is the main representation of a booking
+// NOTE: Start and End are strings, StartTime and EndTime are
+// time.Time objects. The strings are expected by the JS, but
+// for backend convenience, we use time.Time. Use event.parseTimes()
+// to convert.
 type Event struct {
-	ID             int `json:"id"`
-	Type           BookingType
-	Title          string `json:"title"`
-	User           int
-	Start          string `json:"start"`
-	End            string `json:"end"`
-	StartTime      time.Time
-	EndTime        time.Time
-	NoNameAttached bool `json:"noNameAttached"`
-	Repeat         int  `json:"repeat"`
+	ID        int `json:"id"`
+	Type      BookingType
+	Title     string `json:"title"`
+	User      int
+	Start     string `json:"start"`
+	End       string `json:"end"`
+	StartTime time.Time
+	EndTime   time.Time
 }
 
+const CalendarTimeFormat string = "2006-01-02T15:04"
+
+// parseTimes will create StartTime/EndTime if Start/End
+// is populated, or vice versa. If you create an Event object,
+// you should call event.parseTimes()
 func (e *Event) parseTimes() {
+	if e.Start == "" {
+		e.Start = e.StartTime.Format(CalendarTimeFormat)
+		e.End = e.EndTime.Format(CalendarTimeFormat)
+		return
+	}
+
 	var err error
-	e.StartTime, err = time.Parse("2006-01-02T15:04", e.Start)
+	e.StartTime, err = time.Parse(CalendarTimeFormat, e.Start)
 	if err != nil {
 		panic(err)
 		// TODO
 	}
 
-	e.EndTime, err = time.Parse("2006-01-02T15:04", e.End)
+	e.EndTime, err = time.Parse(CalendarTimeFormat, e.End)
 	if err != nil {
 		panic(err)
 		// TODO
@@ -77,21 +93,28 @@ func (e *Event) parseTimes() {
 
 }
 
-func indexPage(w http.ResponseWriter, r *http.Request) {
+// indexPageHandler serves the calendar HTML
+func indexPageHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "index.html")
 }
 
-func js(w http.ResponseWriter, r *http.Request) {
+// jsHandler serves the calendar JS
+func jsHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "main.js")
 }
 
-func favicon(w http.ResponseWriter, r *http.Request) {
+// faviconHandler serves the calendar icon
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "favicon.ico")
 }
 
-func info(w http.ResponseWriter, r *http.Request) {
+// infoHandler serves information used by the calendar app, including
+// what types of booking the user can create, and whether the user
+// has permission to create events without attaching their personal
+// name to it
+func infoHandler(w http.ResponseWriter, r *http.Request) {
 	createTypes := bookingsUserCanCreate(r.Context().Value(UserCtxKey).(int))
-	name := GetNameOfUser(r.Context().Value(UserCtxKey).(int))
+	name := getNameOfUser(r.Context().Value(UserCtxKey).(int))
 	commit := getBuildCommit()
 
 	json, err := json.Marshal(struct {
@@ -117,6 +140,92 @@ func info(w http.ResponseWriter, r *http.Request) {
 	w.Write(json)
 }
 
+// canModifyHandler will be called when a user goes to modify a booking
+// and will return if they can delete that booking, or they can
+// claim the event as a station event (essentially, removing the user's
+// personal name from it)
+func canModifyHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	eventID := vars["id"]
+	id, err := strconv.Atoi(eventID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	userID := r.Context().Value(UserCtxKey).(int)
+
+	json, err := json.Marshal(struct {
+		Delete          bool
+		ClaimForStation bool
+	}{
+		Delete:          hasPermissionToDelete(userID, id),
+		ClaimForStation: canClaimEventForStation(userID, id),
+	})
+
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(json)
+}
+
+// cacheFlushHandler is for people with computing officership
+// permissions to wipe clear all the caches within the app
+func cacheFlushHandler(w http.ResponseWriter, r *http.Request) {
+
+	if !isComputing(r.Context().Value(UserCtxKey).(int)) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+	}
+
+	encodedEventsCache = ""
+	myRadioNameCache = make(map[int]myRadioNameCacheObject)
+	myRadioOfficershipsCache = make(map[int]myRadioOfficershipCacheObject)
+	myRadioTrainingsCache = make(map[int]myRadioTrainingsCacheObject)
+	weekNamesCache = make(map[string]string)
+
+}
+
+// cacheViewHandler allows people with computing officer permissions
+// to view all the information cached within the app
+func cacheViewHandler(w http.ResponseWriter, r *http.Request) {
+
+	if !isComputing(r.Context().Value(UserCtxKey).(int)) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+	}
+
+	var events interface{}
+
+	toDecode := encodedEventsCache
+	if toDecode == "" {
+		toDecode = "{}"
+	}
+
+	err := json.Unmarshal([]byte(toDecode), &events)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	d, err := json.Marshal([]interface{}{
+		events,
+		myRadioNameCache,
+		myRadioOfficershipsCache,
+		myRadioTrainingsCache,
+		weekNamesCache,
+		weekNameCacheSetTime,
+	})
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(d)
+}
+
 func main() {
 	initDB()
 
@@ -127,97 +236,27 @@ func main() {
 		panic(err)
 	}
 
+	// start the MyRadio training session sync daemon
 	go myRadioTrainingSync()
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", indexPage).Methods("GET")
-	r.HandleFunc("/main.js", js).Methods("GET")
-	r.HandleFunc("/create", createEvent).Methods("POST")
-	r.HandleFunc("/delete/{id}", deleteEvent).Methods("DELETE")
-	r.HandleFunc("/claim/{id}", claimEventForStation).Methods("PUT")
-	r.HandleFunc("/canModify/{id}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		eventID := vars["id"]
-		id, err := strconv.Atoi(eventID)
-		if err != nil {
-			// TODO
-			panic(err)
-		}
-
-		userID := r.Context().Value(UserCtxKey).(int)
-
-		json, err := json.Marshal(struct {
-			Delete          bool
-			ClaimForStation bool
-		}{
-			Delete:          hasPermissionToDelete(userID, id),
-			ClaimForStation: canClaimEventForStation(userID, id),
-		})
-
-		if err != nil {
-			// TODO
-			panic(err)
-		}
-
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(json)
-	}).Methods("GET")
-	r.HandleFunc("/get", getEvents).Methods("GET")
+	// define all our endpoints
+	r.HandleFunc("/", indexPageHandler).Methods("GET")
+	r.HandleFunc("/main.js", jsHandler).Methods("GET")
+	r.HandleFunc("/create", createEventHandler).Methods("POST")
+	r.HandleFunc("/delete/{id}", deleteEventHandler).Methods("DELETE")
+	r.HandleFunc("/claim/{id}", claimEventForStationHandler).Methods("PUT")
+	r.HandleFunc("/canModify/{id}", canModifyHandler).Methods("GET")
+	r.HandleFunc("/get", getEventsHandler).Methods("GET")
 	r.HandleFunc("/auth", auth)
-	r.HandleFunc("/info", info).Methods("GET")
+	r.HandleFunc("/info", infoHandler).Methods("GET")
 	r.HandleFunc("/logout", logout)
-	r.HandleFunc("/favicon.ico", favicon).Methods("GET")
+	r.HandleFunc("/favicon.ico", faviconHandler).Methods("GET")
+	r.HandleFunc("/flush", cacheFlushHandler).Methods("GET")
+	r.HandleFunc("/cacheview", cacheViewHandler).Methods("GET")
 
-	r.HandleFunc("/flush", func(w http.ResponseWriter, r *http.Request) {
-
-		if !hasComputingPermission(r.Context().Value(UserCtxKey).(int)) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-		}
-
-		encodedEventsCache = ""
-		myRadioNameCache = make(map[int]myRadioNameCacheObject)
-		myRadioOfficershipsCache = make(map[int]myRadioOfficershipCacheObject)
-		myRadioTrainingsCache = make(map[int]myRadioTrainingsCacheObject)
-		weekNamesCache = make(map[string]string)
-
-	}).Methods("GET")
-
-	r.HandleFunc("/cacheview", func(w http.ResponseWriter, r *http.Request) {
-
-		if !hasComputingPermission(r.Context().Value(UserCtxKey).(int)) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-		}
-
-		var events interface{}
-
-		toDecode := encodedEventsCache
-		if toDecode == "" {
-			toDecode = "{}"
-		}
-
-		err := json.Unmarshal([]byte(toDecode), &events)
-		if err != nil {
-			// TODO
-			panic(err)
-		}
-
-		d, err := json.Marshal([]interface{}{
-			events,
-			myRadioNameCache,
-			myRadioOfficershipsCache,
-			myRadioTrainingsCache,
-			weekNamesCache,
-		})
-		if err != nil {
-			// TODO
-			panic(err)
-		}
-
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(d)
-	}).Methods("GET")
-
+	// route all our endpoints through the authentication
 	http.Handle("/", AuthHandler(r))
 	if err = http.ListenAndServe(":8080", nil); err != nil {
 		panic(err)

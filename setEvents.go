@@ -17,7 +17,22 @@ import (
 var ErrClash error = fmt.Errorf("clashing events")
 var ErrPermission error = fmt.Errorf("permission denied")
 
-func addEvent(event Event) error {
+// EventCreator expans an Event to include the ability to not attach the user's
+// name to the event during creation
+type EventCreator struct {
+	Event
+	NoNameAttached bool `json:"noNameAttached"`
+}
+
+// EventCreatorFromAPI also includes a Repeat field, to create several of the same
+// event, repeating weekly
+type EventCreatorFromAPI struct {
+	EventCreator
+	Repeat int `json:"repeat"`
+}
+
+// addEvent will add an EventCreator to the DB, having checked it for clashes and permissions
+func addEvent(event EventCreator) error {
 	// Check the user can make this type of event
 	allowed := false
 	for _, v := range bookingsUserCanCreate(event.User) {
@@ -44,16 +59,18 @@ func addEvent(event Event) error {
 		return ErrClash
 	}
 
+	// Create the name of the booking
 	if !event.NoNameAttached {
 		if event.Title == "" {
-			event.Title = fmt.Sprintf("%s - %s", event.Type, GetNameOfUser(event.User))
+			event.Title = fmt.Sprintf("%s - %s", event.Type, getNameOfUser(event.User))
 		} else {
-			event.Title = fmt.Sprintf("%s - %s", event.Title, GetNameOfUser(event.User))
+			event.Title = fmt.Sprintf("%s - %s", event.Title, getNameOfUser(event.User))
 		}
 	}
 
-	creatingUser := GetNameOfUser(event.User)
+	creatingUser := getNameOfUser(event.User)
 
+	// deal with bookings from the MyRadio sync, rather than user requests
 	if event.Type == TypeTrainingAutoAddedFromMyRadio {
 		event.Type = TypeTraining
 		creatingUser = "MyRadio Auto-Sync"
@@ -72,10 +89,9 @@ func addEvent(event Event) error {
 	return err
 }
 
-func createEvent(w http.ResponseWriter, r *http.Request) {
-	// Check user's permissions and validate their identity
-	// Implement your authorization logic here
-
+// createEventHandler will let us create bookings from the API (including
+// repeating bookings)
+func createEventHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the request body and create a new event
 	// Parse event data from the request body
 	defer r.Body.Close()
@@ -84,14 +100,14 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 		// TODO
 	}
-	var event Event
+	var event EventCreatorFromAPI
 	json.Unmarshal(body, &event)
 
 	var ok bool
 	event.User, ok = r.Context().Value(UserCtxKey).(int)
 	if !ok {
 		// TODO
-		panic(err)
+		panic("TODO")
 	}
 
 	event.parseTimes()
@@ -102,6 +118,14 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if event.Repeat < 1 {
+		// this event won't happen, so can't be created
+		http.Error(w, "invalid number of repetitions", http.StatusBadRequest)
+		return
+	}
+
+	// deal with repeating events, and add events
+	// NOTE: events should "repeat" at least once (as in, they happen once)
 	firstStartTime := event.StartTime
 	firstEndTime := event.EndTime
 
@@ -109,7 +133,7 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 		event.StartTime = firstStartTime.Add(time.Duration(i*24*7) * time.Hour)
 		event.EndTime = firstEndTime.Add(time.Duration(i*24*7) * time.Hour)
 
-		err = addEvent(event)
+		err = addEvent(event.EventCreator)
 
 		if err != nil {
 			if errors.Is(err, ErrClash) {
@@ -128,10 +152,8 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{\"status\": \"OK\"}"))
 }
 
-func deleteEvent(w http.ResponseWriter, r *http.Request) {
-	// Check user's permissions and validate their identity
-
-	// Delete the event from the database
+// deleteEventHandler deals with removing bookings, once dealt with permissions
+func deleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	eventID := vars["id"]
 	id, err := strconv.Atoi(eventID)
@@ -154,12 +176,15 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("%s deleted event %v", GetNameOfUser(r.Context().Value(UserCtxKey).(int)), id)
+	log.Printf("%s deleted event %v", getNameOfUser(r.Context().Value(UserCtxKey).(int)), id)
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func claimEventForStation(w http.ResponseWriter, r *http.Request) {
+// claimEventsForStationHandler allows events to have the user's personal name
+// removed, so it isn't associated with a single person, instead, the station as
+// a whole
+func claimEventForStationHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	eventID := vars["id"]
 	id, err := strconv.Atoi(eventID)
@@ -176,7 +201,7 @@ func claimEventForStation(w http.ResponseWriter, r *http.Request) {
 	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
 		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
 
-	newTitle, _, _ := strings.Cut(event.Title, fmt.Sprintf("- %s", GetNameOfUser(event.User)))
+	newTitle, _, _ := strings.Cut(event.Title, fmt.Sprintf("- %s", getNameOfUser(event.User)))
 
 	_, err = db.Exec("UPDATE events SET event_title = $1 WHERE event_id = $2", newTitle, id)
 	if err != nil {
@@ -184,11 +209,6 @@ func claimEventForStation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedEventsCache = ""
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

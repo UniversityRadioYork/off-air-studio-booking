@@ -11,9 +11,16 @@ import (
 	"github.com/UniversityRadioYork/myradio-go"
 )
 
+// Team numbers come from MyRadio
 type Team int
+
+// Officer numbers come from MyRadio
 type Officer int
+
+// BookingType relates particular constants to their values in the DB
 type BookingType string
+
+// TrainingStatus numbers come from MyRadio
 type TrainingStatus int
 
 const (
@@ -35,6 +42,8 @@ const (
 	TypeTrainingAutoAddedFromMyRadio             = "ONLY_FOR_USE_IN_MYRADIO_TRAINING_SYNC"
 )
 
+// typeOrdering defines the order booking types will be sorted into for
+// the user's selector
 var typeOrdering map[BookingType]int = map[BookingType]int{
 	TypeTraining:    1,
 	TypeRecording:   2,
@@ -43,18 +52,22 @@ var typeOrdering map[BookingType]int = map[BookingType]int{
 	TypeOther:       5,
 }
 
+// cacheInvalidationTime determines how long we'll keep things in the
+// cache before checking MyRadio to see if it needs updating
+const cacheInvalidationTime = time.Duration(-2*24) * time.Hour
+
 type myRadioNameCacheObject struct {
 	Name      string
-	cacheTime time.Time
+	CacheTime time.Time
 }
-
-const cacheInvalidationTime = time.Duration(-2*24) * time.Hour
 
 var myRadioNameCache map[int]myRadioNameCacheObject = make(map[int]myRadioNameCacheObject)
 
-func GetNameOfUser(id int) string {
+// getNameOfUser will take a user ID and return their name, looked up from the cache,
+// or from MyRadio if it is not known in the cache, or is too old
+func getNameOfUser(id int) string {
 	if cacheObject, ok := myRadioNameCache[id]; ok {
-		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
+		if !cacheObject.CacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
 			return cacheObject.Name
 		}
 	}
@@ -67,7 +80,7 @@ func GetNameOfUser(id int) string {
 
 	myRadioNameCache[id] = myRadioNameCacheObject{
 		Name:      name,
-		cacheTime: time.Now(),
+		CacheTime: time.Now(),
 	}
 
 	return name
@@ -75,14 +88,15 @@ func GetNameOfUser(id int) string {
 
 type myRadioOfficershipCacheObject struct {
 	Officerships []myradio.Officership
-	cacheTime    time.Time
+	CacheTime    time.Time
 }
 
 var myRadioOfficershipsCache map[int]myRadioOfficershipCacheObject = make(map[int]myRadioOfficershipCacheObject)
 
-func myRadioGetOfficerships(userID int) ([]myradio.Officership, error) {
+// getOfficerships will return officerships for a user, either from the cache or MyRadio
+func getOfficerships(userID int) ([]myradio.Officership, error) {
 	if cacheObject, ok := myRadioOfficershipsCache[userID]; ok {
-		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
+		if !cacheObject.CacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
 			return cacheObject.Officerships, nil
 		}
 	}
@@ -94,21 +108,22 @@ func myRadioGetOfficerships(userID int) ([]myradio.Officership, error) {
 
 	myRadioOfficershipsCache[userID] = myRadioOfficershipCacheObject{
 		Officerships: officerships,
-		cacheTime:    time.Now(),
+		CacheTime:    time.Now(),
 	}
 	return officerships, nil
 }
 
 type myRadioTrainingsCacheObject struct {
 	Trainings []myradio.Training
-	cacheTime time.Time
+	CacheTime time.Time
 }
 
 var myRadioTrainingsCache map[int]myRadioTrainingsCacheObject = make(map[int]myRadioTrainingsCacheObject)
 
-func myRadioGetTrainings(userID int) ([]myradio.Training, error) {
+// getTrainings will return the user's trainings, either from cache or MyRadio
+func getTrainings(userID int) ([]myradio.Training, error) {
 	if cacheObject, ok := myRadioTrainingsCache[userID]; ok {
-		if !cacheObject.cacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
+		if !cacheObject.CacheTime.Before(time.Now().Add(cacheInvalidationTime)) {
 			return cacheObject.Trainings, nil
 		}
 	}
@@ -120,13 +135,15 @@ func myRadioGetTrainings(userID int) ([]myradio.Training, error) {
 
 	myRadioTrainingsCache[userID] = myRadioTrainingsCacheObject{
 		Trainings: trainings,
-		cacheTime: time.Now(),
+		CacheTime: time.Now(),
 	}
 	return trainings, nil
 }
 
+// isManagement will return if a user is on management
+// this gives them permissions, such as deleting all events
 func isManagement(userID int) bool {
-	officerships, err := myRadioGetOfficerships(userID)
+	officerships, err := getOfficerships(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -146,20 +163,48 @@ func isManagement(userID int) bool {
 	return false
 }
 
+// isComputing returns if a user has computing officer permissions,
+// for working with cache-related endpoints, such as flushing
+func isComputing(userID int) bool {
+	officerships, err := getOfficerships(userID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	for _, officership := range officerships {
+		if officership.TillDateRaw != "" {
+			continue
+		}
+
+		if officership.Officer.Team.TeamID == TeamComputing {
+			return true
+		}
+
+	}
+
+	return false
+
+}
+
+// hasPermissionToDelete works out if a user can delete a particular event,
+// such as the TC being able to delete all training events
 func hasPermissionToDelete(userID int, eventID int) bool {
 	var event Event
 	db.QueryRow("SELECT * FROM events WHERE event_id = $1", eventID).Scan(
 		&event.ID, &event.Type, &event.Title, &event.User, &event.StartTime, &event.EndTime)
 
+	// you can delete your own
 	if userID == event.User {
 		return true
 	}
 
+	// management can delete all
 	if isManagement(userID) {
 		return true
 	}
 
-	officerships, err := myRadioGetOfficerships(userID)
+	officerships, err := getOfficerships(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -184,6 +229,8 @@ func hasPermissionToDelete(userID int, eventID int) bool {
 	return false
 }
 
+// canClaimEventForStation determins if a user can remove a personal name
+// from an event, and turn it into a station-wide event
 func canClaimEventForStation(userID int, eventID int) bool {
 	if !isManagement(userID) {
 		return false
@@ -197,16 +244,19 @@ func canClaimEventForStation(userID int, eventID int) bool {
 		return false
 	}
 
-	return strings.HasSuffix(event.Title, fmt.Sprintf("- %s", GetNameOfUser(event.User)))
+	return strings.HasSuffix(event.Title, fmt.Sprintf("- %s", getNameOfUser(event.User)))
 
 }
 
+// bookingUserCanCreate returns an ordered list for the types
+// of booking a user can create, based on their officerships and
+// trainings
 func bookingsUserCanCreate(userID int) []BookingType {
 	bookingTypes := []BookingType{TypeOther}
 
 	// If Studio Trained -> Recording
 	// If Trainer -> Training
-	trainings, err := myRadioGetTrainings(userID)
+	trainings, err := getTrainings(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -226,7 +276,7 @@ func bookingsUserCanCreate(userID int) []BookingType {
 
 	// If Committee -> Meeting
 	// If Tech -> Engineering
-	officerships, err := myRadioGetOfficerships(userID)
+	officerships, err := getOfficerships(userID)
 	if err != nil {
 		// TODO
 		panic(err)
@@ -252,6 +302,8 @@ func bookingsUserCanCreate(userID int) []BookingType {
 
 }
 
+// getBuildCommit allows us to see the Git commit in the app,
+// as a way of having version numbers
 func getBuildCommit() string {
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, setting := range info.Settings {
@@ -266,6 +318,10 @@ func getBuildCommit() string {
 var weekNamesCache map[string]string = make(map[string]string)
 var weekNameCacheSetTime time.Time = time.Now()
 
+// updateWeekNamesCache will cache week names from MyRadio.
+// it will need to format them in the way the calendar displays dates
+// NOTE: this uses a weird dash character
+// NOTE: it uses three letter abbreviations for months, except September, which is Sept
 func updateWeekNamesCache() {
 	terms, err := myrSession.GetAllTerms()
 	if err != nil {
@@ -298,6 +354,8 @@ func updateWeekNamesCache() {
 	weekNameCacheSetTime = time.Now()
 }
 
+// getWeekNames will return the week names, and possibly update the cache if
+// it is old
 func getWeekNames() map[string]string {
 	if len(weekNamesCache) == 0 {
 		updateWeekNamesCache()
@@ -308,26 +366,4 @@ func getWeekNames() map[string]string {
 	}
 
 	return weekNamesCache
-}
-
-func hasComputingPermission(userID int) bool {
-	officerships, err := myRadioGetOfficerships(userID)
-	if err != nil {
-		// TODO
-		panic(err)
-	}
-
-	for _, officership := range officerships {
-		if officership.TillDateRaw != "" {
-			continue
-		}
-
-		if officership.Officer.Team.TeamID == TeamComputing {
-			return true
-		}
-
-	}
-
-	return false
-
 }
