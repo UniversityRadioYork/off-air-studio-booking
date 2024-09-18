@@ -170,5 +170,15 @@ fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
 
     weekNames = d.WeekNames;
     updateWeekNameText();
+
+    // Warnings
+    if (d.Warnings.length != 0) {
+        document.getElementById("warnings-alert-box").style.display = "block";
+        d.Warnings.forEach((w) => {
+            let warning = document.createElement("LI");
+            warning.textContent = w;
+            document.getElementById("warnings-list").appendChild(warning);
+        })
+    }
 })
 

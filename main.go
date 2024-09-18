@@ -135,6 +135,10 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	// 2. Is management or TC?
 	if isManagement(userID) || isTrainingCoordinator(userID) {
 		for _, warning := range trainingWarnings {
+			if warning.UserID == userID {
+				continue
+			}
+
 			warnings = append(warnings, fmt.Sprintf(
 				"%s has a training session booked on MyRadio at %v, however there is a conflict on the calendar.",
 				getNameOfUser(warning.UserID), warning.TrainingTime))
