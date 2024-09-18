@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type trainingWarning struct {
+	UserID       int
+	TrainingTime time.Time
+}
+
+var trainingWarnings []trainingWarning = []trainingWarning{}
+
 func myRadioTrainingSync() {
 	/**
 
@@ -59,6 +66,19 @@ func myRadioTrainingSync() {
 			})
 
 			if err == nil {
+				// remove appropriate warning if one exists
+				warningIndex := -1
+				for idx, warning := range trainingWarnings {
+					if warning.UserID == trainingSession.HostMemberID && warning.TrainingTime == trainingSession.StartTime() {
+						warningIndex = idx
+						continue
+					}
+				}
+
+				if warningIndex != -1 {
+					trainingWarnings = append(trainingWarnings[:warningIndex], trainingWarnings[warningIndex+1:]...)
+				}
+
 				continue
 			}
 
@@ -67,7 +87,24 @@ func myRadioTrainingSync() {
 				panic(err)
 			}
 
-			// TODO Inform the User
+			// See if a warning already exists
+			warningFound := false
+			for _, warning := range trainingWarnings {
+				if warning.UserID == trainingSession.HostMemberID && warning.TrainingTime == trainingSession.StartTime() {
+					warningFound = true
+					break
+				}
+			}
+
+			if warningFound {
+				continue
+			}
+
+			// add a warning
+			trainingWarnings = append(trainingWarnings, trainingWarning{
+				UserID:       trainingSession.HostMemberID,
+				TrainingTime: trainingSession.StartTime(),
+			})
 
 		}
 

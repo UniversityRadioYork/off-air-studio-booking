@@ -187,6 +187,27 @@ func isComputing(userID int) bool {
 
 }
 
+func isTrainingCoordinator(userID int) bool {
+	officerships, err := getOfficerships(userID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	for _, officership := range officerships {
+		if officership.TillDateRaw != "" {
+			continue
+		}
+
+		if officership.Officer.OfficerID == int(OfficerTrainingCoordinator) {
+			return true
+		}
+
+	}
+
+	return false
+}
+
 // hasPermissionToDelete works out if a user can delete a particular event,
 // such as the TC being able to delete all training events
 func hasPermissionToDelete(userID int, eventID int) bool {
@@ -204,6 +225,17 @@ func hasPermissionToDelete(userID int, eventID int) bool {
 		return true
 	}
 
+	// training
+	if event.Type == TypeTraining && isTrainingCoordinator(userID) {
+		return true
+	}
+
+	// computing
+	if event.Type == TypeEngineering && isComputing(userID) {
+		return true
+	}
+
+	// engineering
 	officerships, err := getOfficerships(userID)
 	if err != nil {
 		// TODO
@@ -215,15 +247,11 @@ func hasPermissionToDelete(userID int, eventID int) bool {
 			continue
 		}
 
-		if event.Type == TypeEngineering && (officership.Officer.Team.TeamID == TeamEngineering || officership.Officer.Team.TeamID == TeamComputing) {
+		if event.Type == TypeEngineering && officership.Officer.Team.TeamID == TeamEngineering {
 			// Engineering Type Events
 			return true
 		}
 
-		if event.Type == TypeTraining && officership.Officer.OfficerID == int(OfficerTrainingCoordinator) {
-			// Training
-			return true
-		}
 	}
 
 	return false
@@ -248,6 +276,22 @@ func canClaimEventForStation(userID int, eventID int) bool {
 
 }
 
+func isTrainer(userID int) bool {
+	trainings, err := getTrainings(userID)
+	if err != nil {
+		// TODO
+		panic(err)
+	}
+
+	for _, training := range trainings {
+		if training.StatusID == TrainingTrainer {
+			return true
+		}
+	}
+
+	return false
+}
+
 // bookingUserCanCreate returns an ordered list for the types
 // of booking a user can create, based on their officerships and
 // trainings
@@ -267,11 +311,10 @@ func bookingsUserCanCreate(userID int) []BookingType {
 			bookingTypes = append(bookingTypes, TypeRecording)
 			continue
 		}
+	}
 
-		if training.StatusID == TrainingTrainer {
-			bookingTypes = append(bookingTypes, TypeTraining)
-			continue
-		}
+	if isTrainer(userID) {
+		bookingTypes = append(bookingTypes, TypeTraining)
 	}
 
 	// If Committee -> Meeting

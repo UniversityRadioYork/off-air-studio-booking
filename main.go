@@ -113,9 +113,33 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 // has permission to create events without attaching their personal
 // name to it
 func infoHandler(w http.ResponseWriter, r *http.Request) {
-	createTypes := bookingsUserCanCreate(r.Context().Value(UserCtxKey).(int))
-	name := getNameOfUser(r.Context().Value(UserCtxKey).(int))
+	userID := r.Context().Value(UserCtxKey).(int)
+	createTypes := bookingsUserCanCreate(userID)
+	name := getNameOfUser(userID)
 	commit := getBuildCommit()
+
+	// Create Warnings
+	var warnings []string = []string{}
+
+	// 1. Warnings about you
+	if isTrainer(userID) {
+		for _, warning := range trainingWarnings {
+			if warning.UserID == userID {
+				warnings = append(warnings, fmt.Sprintf(
+					"You have a training session booked on MyRadio at %v, however there is a conflict on the calendar.",
+					warning.TrainingTime))
+			}
+		}
+	}
+
+	// 2. Is management or TC?
+	if isManagement(userID) || isTrainingCoordinator(userID) {
+		for _, warning := range trainingWarnings {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s has a training session booked on MyRadio at %v, however there is a conflict on the calendar.",
+				getNameOfUser(warning.UserID), warning.TrainingTime))
+		}
+	}
 
 	json, err := json.Marshal(struct {
 		CreateTypes                []BookingType
@@ -123,12 +147,14 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		CommitHash                 string
 		UserCanCreateUnnamedEvents bool
 		WeekNames                  map[string]string
+		Warnings                   []string
 	}{
 		CreateTypes:                createTypes,
 		Name:                       name,
 		CommitHash:                 commit,
 		UserCanCreateUnnamedEvents: isManagement(r.Context().Value(UserCtxKey).(int)),
 		WeekNames:                  getWeekNames(),
+		Warnings:                   warnings,
 	})
 
 	if err != nil {
@@ -185,6 +211,7 @@ func cacheFlushHandler(w http.ResponseWriter, r *http.Request) {
 	myRadioOfficershipsCache = make(map[int]myRadioOfficershipCacheObject)
 	myRadioTrainingsCache = make(map[int]myRadioTrainingsCacheObject)
 	weekNamesCache = make(map[string]string)
+	trainingWarnings = make([]trainingWarning, 0)
 
 }
 
@@ -216,6 +243,7 @@ func cacheViewHandler(w http.ResponseWriter, r *http.Request) {
 		myRadioTrainingsCache,
 		weekNamesCache,
 		weekNameCacheSetTime,
+		trainingWarnings,
 	})
 	if err != nil {
 		// TODO
