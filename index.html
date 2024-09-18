@@ -27,14 +27,15 @@
                     <div class="dropdown-menu" aria-labelledby="user-logged-in">
                         <a class="dropdown-item" href="/logout">Logout</a>
                         <hr>
-                        <p class="dropdown-item" id="commit-hash"></a>
+                        <p class="dropdown-item" id="commit-hash"></p>
                     </div>
                 </li>
             </ul>
         </div>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+            aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
-          </button>
+        </button>
     </nav>
 
     <br>
@@ -44,14 +45,14 @@
         <div class="alert alert-warning" role="alert" id="warnings-alert-box" style="display: none;">
             <h5 class="alert-heading">Warnings</h5>
             <ul id="warnings-list"></ul>
-          </div>
+        </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0px;">
-		<h3 style="flex-grow: 1; text-align: center;" class="text-center" id="week-name"></h3>
-                <button id="create-button" type="button" class="btn btn-success" data-toggle="modal"
-                        data-target="#eventModal" style="flex-grow: 0;">
-                        Add Booking</button>
-	</div>
+            <h3 style="flex-grow: 1; text-align: center;" class="text-center" id="week-name"></h3>
+            <button id="create-button" type="button" class="btn btn-success" data-toggle="modal"
+                data-target="#eventModal" style="flex-grow: 0;">
+                Add Booking</button>
+        </div>
 
         <!-- Create Event -->
         <div class="modal" id="eventModal" tabindex="-1" role="dialog">
@@ -92,7 +93,8 @@
 
                             <div class="form-group" id="name-selector">
                                 <input type="checkbox" id="name-selector-check">
-                                <label for="name-selector-check">Remove my name from the event (for station-wide events).</label>
+                                <label for="name-selector-check">Remove my name from the event (for station-wide
+                                    events).</label>
                             </div>
                         </form>
                         <p id="create-error" style="color: red;"></p>
@@ -136,22 +138,20 @@
             </div>
         </div>
 
-	<br>
+        <br>
 
-	<div class="card border-primary mb-3">
-  		<div class="card-header text-primary">Key</div>
-  		<div class="card-body">
-			<h4>
-				<span class="badge badge-secondary" style="background-color: red;">Training</span>
-				<span class="badge badge-secondary" style="background-color: blue;">Recording</span>
-				<span class="badge badge-secondary" style="background-color: green;">Engineering</span>
-				<span class="badge badge-secondary" style="background-color: purple;">Meeting</span>
-				<span class="badge badge-secondary" style="background-color: yellow; color: black;">Other</span>
-			</h4>
-		</div>
-  	</div>
-</div>
-
+        <div class="card border-primary mb-3">
+            <div class="card-header text-primary">Key</div>
+            <div class="card-body">
+                <h4>
+                    <span class="badge badge-secondary" style="background-color: red;">Training</span>
+                    <span class="badge badge-secondary" style="background-color: blue;">Recording</span>
+                    <span class="badge badge-secondary" style="background-color: green;">Engineering</span>
+                    <span class="badge badge-secondary" style="background-color: purple;">Meeting</span>
+                    <span class="badge badge-secondary" style="background-color: yellow; color: black;">Other</span>
+                </h4>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
