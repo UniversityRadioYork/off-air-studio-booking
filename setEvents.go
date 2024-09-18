@@ -35,12 +35,18 @@ type EventCreatorFromAPI struct {
 func addEvent(event EventCreator) error {
 	// Check the user can make this type of event
 	allowed := false
-	for _, v := range bookingsUserCanCreate(event.User) {
-		if v == event.Type {
-			allowed = true
-			break
+
+	if event.Type == TypeTrainingAutoAddedFromMyRadio {
+		allowed = true
+	} else {
+		for _, v := range bookingsUserCanCreate(event.User) {
+			if v == event.Type {
+				allowed = true
+				break
+			}
 		}
 	}
+
 	if !allowed {
 		return ErrPermission
 	}
@@ -74,7 +80,7 @@ func addEvent(event EventCreator) error {
 	if event.Type == TypeTrainingAutoAddedFromMyRadio {
 		event.Type = TypeTraining
 		creatingUser = "MyRadio Auto-Sync"
-		event.Title = fmt.Sprintf("%s %s", event.Title, "📻") // add a radio emoji for things that are added because they're on myradio
+		event.Title = fmt.Sprintf("Training - %s 📻", getNameOfUser(event.User)) // add a radio emoji for things that are added because they're on myradio
 	}
 
 	// Insert the event into the database
@@ -84,7 +90,7 @@ func addEvent(event EventCreator) error {
 
 	encodedEventsCache = ""
 
-	log.Printf("%s created %s at %v (ID %v)\n", creatingUser, event.Title, event.Start, event.ID)
+	log.Printf("%s created %s at %v (ID %v)\n", creatingUser, event.Title, event.StartTime, event.ID)
 
 	return err
 }
