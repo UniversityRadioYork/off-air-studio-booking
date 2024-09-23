@@ -208,6 +208,7 @@ func cacheFlushHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !isComputing(r.Context().Value(UserCtxKey).(int)) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
 	}
 
 	encodedEventsCache = ""
@@ -225,6 +226,7 @@ func cacheViewHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !isComputing(r.Context().Value(UserCtxKey).(int)) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
 	}
 
 	var events interface{}
