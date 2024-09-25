@@ -5,26 +5,6 @@ import (
 	"time"
 )
 
-type trainingWarning struct {
-	UserID       int
-	TrainingTime time.Time
-	ClashID      int
-}
-
-var trainingWarnings []trainingWarning = []trainingWarning{}
-
-func removeOutdatedWarnings() {
-	var updatedTrainingWarnings []trainingWarning = []trainingWarning{}
-
-	for _, warning := range trainingWarnings {
-		if warning.TrainingTime.After(time.Now().Add(-time.Hour)) {
-			updatedTrainingWarnings = append(updatedTrainingWarnings, warning)
-		}
-	}
-
-	trainingWarnings = updatedTrainingWarnings
-}
-
 func myRadioTrainingSync() {
 	/**
 
@@ -84,16 +64,10 @@ func myRadioTrainingSync() {
 
 			if err == nil {
 				// remove appropriate warning if one exists
-				warningIndex := -1
-				for idx, warning := range trainingWarnings {
-					if warning.UserID == trainingSession.HostMemberID && warning.TrainingTime == trainingSession.StartTime() {
-						warningIndex = idx
-						continue
-					}
-				}
+				existingWarningIndex := findExistingWarning(trainingSession.HostMemberID, trainingSession.StartTime())
 
-				if warningIndex != -1 {
-					trainingWarnings = append(trainingWarnings[:warningIndex], trainingWarnings[warningIndex+1:]...)
+				if existingWarningIndex != -1 {
+					deleteWarningByIndex(existingWarningIndex)
 				}
 
 				continue
@@ -105,15 +79,7 @@ func myRadioTrainingSync() {
 			}
 
 			// See if a warning already exists
-			warningFound := false
-			for _, warning := range trainingWarnings {
-				if warning.UserID == trainingSession.HostMemberID && warning.TrainingTime == trainingSession.StartTime() {
-					warningFound = true
-					break
-				}
-			}
-
-			if warningFound {
+			if existingWarning := findExistingWarning(trainingSession.HostMemberID, trainingSession.StartTime()); existingWarning != -1 {
 				continue
 			}
 

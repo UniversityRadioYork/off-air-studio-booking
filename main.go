@@ -30,11 +30,6 @@ type CtxKey string
 
 const UserCtxKey CtxKey = "user"
 
-type userFacingWarning struct {
-	WarningText string
-	ClashID     int
-}
-
 // initDB will create our connection to the database
 // this uses the environment variables as described in the README
 func initDB() {
@@ -119,37 +114,6 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 // name to it
 func infoHandler(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(UserCtxKey).(int)
-	createTypes := bookingsUserCanCreate(userID)
-	name := getNameOfUser(userID)
-	commit := getBuildCommit()
-
-	// Create Warnings
-	var warnings []userFacingWarning = []userFacingWarning{}
-
-	// 1. Warnings about you
-	if isTrainer(userID) {
-		for _, warning := range trainingWarnings {
-			if warning.UserID == userID {
-				warnings = append(warnings, userFacingWarning{WarningText: fmt.Sprintf(
-					"You have a training session booked on MyRadio on %v, however there is a conflict on the calendar.",
-					warning.TrainingTime.Format("Mon 02/01 at 15:04")),
-					ClashID: warning.ClashID})
-			}
-		}
-	}
-
-	// 2. Is management or TC?
-	if isManagement(userID) || isTrainingCoordinator(userID) {
-		for _, warning := range trainingWarnings {
-			if warning.UserID == userID {
-				continue
-			}
-
-			warnings = append(warnings, userFacingWarning{WarningText: fmt.Sprintf(
-				"%s has a training session booked on MyRadio on %v, however there is a conflict on the calendar.",
-				getNameOfUser(warning.UserID), warning.TrainingTime.Format("Mon 02/01 at 15:04")), ClashID: warning.ClashID})
-		}
-	}
 
 	json, err := json.Marshal(struct {
 		CreateTypes                []BookingType
@@ -159,12 +123,12 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		WeekNames                  map[string]string
 		Warnings                   []userFacingWarning
 	}{
-		CreateTypes:                createTypes,
-		Name:                       name,
-		CommitHash:                 commit,
+		CreateTypes:                bookingsUserCanCreate(userID),
+		Name:                       getNameOfUser(userID),
+		CommitHash:                 getBuildCommit(),
 		UserCanCreateUnnamedEvents: isManagement(r.Context().Value(UserCtxKey).(int)),
 		WeekNames:                  getWeekNames(),
-		Warnings:                   warnings,
+		Warnings:                   createUserFacingWarnings(userID),
 	})
 
 	if err != nil {
