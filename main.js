@@ -5,6 +5,25 @@ let userCanCreateUnnamedEvents = false;
  * Clicking on an Event
  */
 const eventClick = (info) => {
+    if (typeof(info) == "number") {
+        fetch("/get", { credentials: "include" }).then(r => r.json()).then(d => {
+            d.forEach(e => {
+                if (e.id == info) {
+                    eventClick({
+                        event: {
+                            title: e.title,
+                            start: new Date(e.start),
+                            end: new Date(e.end),
+                            id: e.id
+                        }
+                    })
+                    return
+                }
+            })
+        })
+        return
+    }
+
     document.getElementById('eventTitleView').innerText = info.event.title;
     document.getElementById('eventStartTimeView').textContent = info.event.start;
     document.getElementById('eventEndTimeView').textContent = info.event.end;
@@ -176,7 +195,8 @@ fetch("/info", { credentials: "include" }).then(r => r.json()).then(d => {
         document.getElementById("warnings-alert-box").style.display = "block";
         d.Warnings.forEach((w) => {
             let warning = document.createElement("LI");
-            warning.textContent = w;
+            warning.textContent = w.WarningText;
+            warning.innerHTML = warning.innerHTML + ` (<a href="javascript:eventClick(${w.ClashID});">View Conflict</a>)`;
             document.getElementById("warnings-list").appendChild(warning);
         })
     }

@@ -8,9 +8,22 @@ import (
 type trainingWarning struct {
 	UserID       int
 	TrainingTime time.Time
+	ClashID      int
 }
 
 var trainingWarnings []trainingWarning = []trainingWarning{}
+
+func removeOutdatedWarnings() {
+	var updatedTrainingWarnings []trainingWarning = []trainingWarning{}
+
+	for _, warning := range trainingWarnings {
+		if warning.TrainingTime.After(time.Now().Add(-time.Hour)) {
+			updatedTrainingWarnings = append(updatedTrainingWarnings, warning)
+		}
+	}
+
+	trainingWarnings = updatedTrainingWarnings
+}
 
 func myRadioTrainingSync() {
 	/**
@@ -26,6 +39,9 @@ func myRadioTrainingSync() {
 	management.
 
 	**/
+
+	// Remove outdated warnings first
+	removeOutdatedWarnings()
 
 	for {
 		if time.Now().Hour() < 9 || time.Now().Hour() >= 22 {
@@ -57,7 +73,7 @@ func myRadioTrainingSync() {
 			if count != 0 {
 				continue
 			}
-			err = addEvent(EventCreator{
+			clashID, err := addEvent(EventCreator{
 				Event: Event{
 					Type:      TypeTrainingAutoAddedFromMyRadio,
 					User:      trainingSession.HostMemberID,
@@ -105,6 +121,7 @@ func myRadioTrainingSync() {
 			trainingWarnings = append(trainingWarnings, trainingWarning{
 				UserID:       trainingSession.HostMemberID,
 				TrainingTime: trainingSession.StartTime(),
+				ClashID:      clashID,
 			})
 
 		}

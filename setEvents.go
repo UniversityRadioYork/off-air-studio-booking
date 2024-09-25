@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,7 +33,7 @@ type EventCreatorFromAPI struct {
 }
 
 // addEvent will add an EventCreator to the DB, having checked it for clashes and permissions
-func addEvent(event EventCreator) error {
+func addEvent(event EventCreator) (clashID int, err error) {
 	// Check the user can make this type of event
 	allowed := false
 
@@ -48,21 +49,18 @@ func addEvent(event EventCreator) error {
 	}
 
 	if !allowed {
-		return ErrPermission
+		err = ErrPermission
+		return
 	}
 
 	// Find clashes
-	rows, err := db.Query(
-		"SELECT * FROM events WHERE (start_time >= $1 AND start_time < $2) OR (end_time > $1 AND end_time <= $2) OR (start_time < $1 AND end_time > $2)",
+	row := db.QueryRow(
+		"SELECT event_id FROM events WHERE (start_time >= $1 AND start_time < $2) OR (end_time > $1 AND end_time <= $2) OR (start_time < $1 AND end_time > $2)",
 		event.StartTime, event.EndTime)
-	if err != nil {
-		return err
-	}
 
-	defer rows.Close()
-
-	if rows.Next() {
-		return ErrClash
+	if !errors.Is(row.Err(), sql.ErrNoRows) {
+		row.Scan(&clashID)
+		return clashID, ErrClash
 	}
 
 	// Create the name of the booking
@@ -92,7 +90,7 @@ func addEvent(event EventCreator) error {
 
 	log.Printf("%s created %s at %v (ID %v)\n", creatingUser, event.Title, event.StartTime, event.ID)
 
-	return err
+	return
 }
 
 // createEventHandler will let us create bookings from the API (including
@@ -139,7 +137,7 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 		event.StartTime = firstStartTime.Add(time.Duration(i*24*7) * time.Hour)
 		event.EndTime = firstEndTime.Add(time.Duration(i*24*7) * time.Hour)
 
-		err = addEvent(event.EventCreator)
+		_, err = addEvent(event.EventCreator)
 
 		if err != nil {
 			if errors.Is(err, ErrClash) {

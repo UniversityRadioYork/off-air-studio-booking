@@ -30,6 +30,11 @@ type CtxKey string
 
 const UserCtxKey CtxKey = "user"
 
+type userFacingWarning struct {
+	WarningText string
+	ClashID     int
+}
+
 // initDB will create our connection to the database
 // this uses the environment variables as described in the README
 func initDB() {
@@ -119,15 +124,16 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	commit := getBuildCommit()
 
 	// Create Warnings
-	var warnings []string = []string{}
+	var warnings []userFacingWarning = []userFacingWarning{}
 
 	// 1. Warnings about you
 	if isTrainer(userID) {
 		for _, warning := range trainingWarnings {
 			if warning.UserID == userID {
-				warnings = append(warnings, fmt.Sprintf(
-					"You have a training session booked on MyRadio at %v, however there is a conflict on the calendar.",
-					warning.TrainingTime))
+				warnings = append(warnings, userFacingWarning{WarningText: fmt.Sprintf(
+					"You have a training session booked on MyRadio on %v, however there is a conflict on the calendar.",
+					warning.TrainingTime.Format("Mon 02/01 at 15:04")),
+					ClashID: warning.ClashID})
 			}
 		}
 	}
@@ -139,9 +145,9 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			warnings = append(warnings, fmt.Sprintf(
-				"%s has a training session booked on MyRadio at %v, however there is a conflict on the calendar.",
-				getNameOfUser(warning.UserID), warning.TrainingTime))
+			warnings = append(warnings, userFacingWarning{WarningText: fmt.Sprintf(
+				"%s has a training session booked on MyRadio on %v, however there is a conflict on the calendar.",
+				getNameOfUser(warning.UserID), warning.TrainingTime.Format("Mon 02/01 at 15:04")), ClashID: warning.ClashID})
 		}
 	}
 
@@ -151,7 +157,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		CommitHash                 string
 		UserCanCreateUnnamedEvents bool
 		WeekNames                  map[string]string
-		Warnings                   []string
+		Warnings                   []userFacingWarning
 	}{
 		CreateTypes:                createTypes,
 		Name:                       name,
