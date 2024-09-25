@@ -58,9 +58,14 @@ func addEvent(event EventCreator) (clashID int, err error) {
 		"SELECT event_id FROM events WHERE (start_time >= $1 AND start_time < $2) OR (end_time > $1 AND end_time <= $2) OR (start_time < $1 AND end_time > $2)",
 		event.StartTime, event.EndTime)
 
-	if !errors.Is(row.Err(), sql.ErrNoRows) {
-		row.Scan(&clashID)
+	err = row.Scan(&clashID)
+
+	if err == nil {
 		return clashID, ErrClash
+	}
+
+	if !errors.Is(err, sql.ErrNoRows) {
+		return
 	}
 
 	// Create the name of the booking
