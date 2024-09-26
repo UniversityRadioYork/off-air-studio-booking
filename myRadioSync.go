@@ -20,14 +20,14 @@ func myRadioTrainingSync() {
 
 	**/
 
-	// Remove outdated warnings first
-	removeOutdatedWarnings()
-
 	for {
 		if time.Now().Hour() < 9 || time.Now().Hour() >= 22 {
 			time.Sleep(15 * time.Minute)
 			continue
 		}
+
+		// Remove outdated warnings first
+		removeOutdatedWarnings()
 
 		// Do the Sync
 		// Ask MyRadio for training sessions
