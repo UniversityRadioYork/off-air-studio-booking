@@ -131,7 +131,7 @@ document.getElementById('eventType').addEventListener('change', async function (
     const nameSelectButton = document.getElementById("name-selector");
     nameSelectButton.style.display = selectedType == "Other" && userCanCreateUnnamedEvents ? "block" : "none";
     const repeatSelector = document.getElementById("repeat");
-    repeatSelector.style.display = selectedType == "Meeting" ? "block" : "none";
+    repeatSelector.style.display = ["Meeting", "Engineering"].includes(selectedType) ? "block" : "none";
     document.getElementById("repeatEvent").value = 1;
 });
 
